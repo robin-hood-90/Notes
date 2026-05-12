@@ -161,11 +161,27 @@ flowchart TD
 - Error boundary pattern and safe template navigation
 
 #### [[Angular/02_Core/14_Router_View_Transitions]]
-- `withViewTransitions()` setup with Angular Router
-- Browser View Transition API: page snapshot → morph animation
-- CSS customisation: `::view-transition-old()` / `::view-transition-new()`
-- Named view transitions with `view-transition-name` for shared elements
-- `prefers-reduced-motion` handling and browser fallbacks
+- `withViewTransitions` API — browser view transitions, same-document transitions, cross-document
+- Customizing transition direction, naming views, progressive enhancement fallback
+- Performance considerations and browser support
+
+#### [[Angular/02_Core/15_Route_Guards_Deep_Dive]]
+- `CanActivateFn`, `CanActivateChildFn`, `CanDeactivateFn`, `CanMatchFn` — full API for each
+- Guard composition (execution order, priority), `UrlTree` redirect patterns, `inject()` inside guards
+- `ResolveFn` for pre-fetching route data, `runGuardsAndResolvers` options
+- Guard testing with `provideRouter` and `HttpTestingController`
+
+#### [[Angular/02_Core/16_Interceptors_Deep_Dive]]
+- `HttpInterceptorFn` pipeline, execution order (request forward, response backward flow diagram)
+- `HttpContextToken` for per-request metadata (skip auth, TTL, retry count)
+- Retry with exponential backoff + jitter, in-memory caching with TTL, progress events (upload/download)
+- Error normalization, correlation IDs, interceptor testing with `HttpTestingController`
+
+#### [[Angular/02_Core/17_Modules_and_NgModule_Deep_Dive]]
+- `@NgModule` full API: declarations, imports, exports, providers, bootstrap, schemas
+- Module types: feature (self-contained), shared (re-exports), core (singleton providers), routing
+- `forRoot()`/`forChild()` pattern with `ModuleWithProviders<T>`, lazy loading with `loadChildren`
+- Module vs standalone comparison table (12 rows), migration from module to standalone step-by-step
 
 ### Advanced (10 files)
 

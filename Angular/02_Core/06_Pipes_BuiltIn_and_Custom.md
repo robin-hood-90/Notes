@@ -1,289 +1,380 @@
 ---
-tags: [angular, core, pipes, custom-pipes, date, async, pure-impure]
-aliases: ["Angular Pipes", "Built-in Pipes", "Custom Pipes", "Pipe Transform"]
+tags: [angular, core, pipes, custom-pipes, async-pipe, pure-impure, pipe-testing, i18n]
+aliases: ["Angular Pipes Deep Dive", "Built-in Pipes", "Custom Pipes", "Pipe Transform", "async pipe"]
 status: stable
-updated: 2026-05-03
+updated: 2026-05-11
 ---
 
-# Pipes: Built-In and Custom
+# Pipes: Built-In, Custom, and Deep Dive
 
 > [!summary] Goal
-> Transform data in templates using built-in pipes and create custom pipes for reusable formatting.
+> Master Angular pipes: all built-in pipes with format options, custom `@Pipe` with dependency injection, `| async` with `@let`, stateful vs stateless pipes, performance tuning, and pipe testing.
 
 ## Table of Contents
 
-1. [Why Pipes Matter](#why-pipes-matter)
-2. [Built-in Pipes Reference](#built-in-pipes-reference)
-3. [Custom Pipes](#custom-pipes)
-4. [Pure vs Impure Pipes](#pure-vs-impure-pipes)
-5. [Pipe Composition](#pipe-composition)
-6. [Pitfalls](#pitfalls)
+1. [Built-in Pipes Complete Reference](#built-in-pipes-complete-reference)
+2. [Custom Pipes](#custom-pipes)
+3. [Stateful and Impure Pipes](#stateful-and-impure-pipes)
+4. [async Pipe and @let](#async-pipe-and-let)
+5. [Pipes in TypeScript](#pipes-in-typescript)
+6. [Pipe Testing](#pipe-testing)
+7. [Performance Optimization](#performance-optimization)
 
 ---
 
-## Why Pipes Matter
+## Built-in Pipes Complete Reference
 
-Pipes transform values in templates. They're the Angular alternative to computed properties — concise, reusable, and testable.
+> [!info] Built-in pipes
+> Angular provides 15+ built-in pipes for common transformations. The most used ones are `date`, `currency`, `number`, `async`, `keyvalue`, `json`, `slice`, `i18nPlural`, and `i18nSelect`.
 
 ```html
-<p>{{ user.createdAt | date:'medium' }}</p>
-<p>{{ product.price | currency:'USD' }}</p>
-<p>{{ user.role | uppercase }}</p>
+<p>{{ today | date:'medium' }}</p>                    <!-- May 3, 2026, 2:30:00 PM -->
+<p>{{ price | currency:'EUR':'symbol':'1.2-2' }}</p>  <!-- €42.99 -->
+<p>{{ items | slice:0:3 }}</p>                        <!-- First 3 items -->
+<p>{{ data$ | async }}</p>                            <!-- Subscribe to Observable -->
 ```
 
----
+### Date formats
 
-## Built-in Pipes Reference
+```text
+Predefined formats:
+  'short':    5/3/26, 2:30 PM
+  'medium':   May 3, 2026, 2:30:00 PM
+  'long':     May 3, 2026 at 2:30:00 PM GMT+5
+  'full':     Monday, May 3, 2026 at 2:30:00 PM GMT+05:30
+  'shortDate':    5/3/26
+  'mediumDate':   May 3, 2026
+  'longDate':     May 3, 2026
+  'fullDate':     Monday, May 3, 2026
+  'shortTime':    2:30 PM
+  'mediumTime':   2:30:00 PM
+  'longTime':     2:30:00 PM GMT+5
+  'fullTime':     2:30:00 PM GMT+05:30
+
+Custom formats:
+  {{ today | date:'yyyy-MM-dd' }}        → 2026-05-03
+  {{ today | date:'dd/MM/yyyy' }}        → 03/05/2026
+  {{ today | date:'EEEE, MMMM d, y' }}   → Monday, May 3, 2026
+  {{ today | date:'HH:mm:ss' }}           → 14:30:00
+
+Locale-aware:
+  {{ today | date:'medium':'':'fr' }}     → 3 mai 2026, 14:30:00
+  {{ today | date:'fullDate':'':'de' }}   → Montag, 3. Mai 2026
+```
+
+### Currency and Number formats
 
 ```html
-<!-- Date formats -->
-<p>{{ today | date }}</p>                     <!-- May 3, 2026 -->
-<p>{{ today | date:'medium' }}</p>             <!-- May 3, 2026, 2:30:00 PM -->
-<p>{{ today | date:'short' }}</p>              <!-- 5/3/26, 2:30 PM -->
-<p>{{ today | date:'yyyy-MM-dd' }}</p>         <!-- 2026-05-03 -->
-
 <!-- Currency -->
-<p>{{ price | currency }}</p>                  <!-- $42.99 -->
-<p>{{ price | currency:'EUR' }}</p>            <!-- €42.99 -->
-<p>{{ price | currency:'EUR':'symbol':'1.2-2' }}</p>
+<p>{{ 42.99 | currency }}                      <!-- $42.99 -->
+<p>{{ 42.99 | currency:'EUR' }}                <!-- €42.99 -->
+<p>{{ 42.99 | currency:'EUR':'code' }}         <!-- EUR42.99 -->
+<p>{{ 42.99 | currency:'EUR':'symbol':'1.2-2' }}  <!-- €42.99 -->
+<p>{{ 42.99 | currency:'JPY':'symbol':'1.0-0' }}  <!-- ¥43 -->
 
-<!-- Number/Decimal -->
-<p>{{ 3.14159 | number }}</p>                  <!-- 3.142 -->
-<p>{{ 3.14159 | number:'1.2-2' }}</p>          <!-- 3.14 -->
-<p>{{ 0.5 | percent }}</p>                     <!-- 50% -->
+<!-- Number / Decimal -->
+<p>{{ 3.14159 | number:'1.2-2' }}              <!-- 3.14 -->
+<p>{{ 0.5 | percent:'1.0-2' }}                 <!-- 50.00% -->
+<p>{{ 1234567 | number:'1.0-0' }}              <!-- 1,234,567 -->
 
-<!-- Text -->
-<p>{{ 'hello world' | uppercase }}</p>         <!-- HELLO WORLD -->
-<p>{{ 'HELLO WORLD' | lowercase }}</p>         <!-- hello world -->
-<p>{{ 'hello world' | titlecase }}</p>         <!-- Hello World -->
+<!-- Percent -->
+<p>{{ 0.856 | percent }}                        <!-- 85.6% -->
+<p>{{ 0.856 | percent:'1.2-2' }}               <!-- 85.60% -->
+```
 
-<!-- Object -->
-<pre>{{ user | json }}</pre>                   <!-- {"id":1,"name":"Alice"} -->
+### Other built-in pipes
 
-<!-- Array -->
-<p>{{ items | slice:0:2 | json }}</p>          <!-- First 2 items -->
+```html
+<!-- Async — subscribes to Observable/Promise -->
+<p>{{ data$ | async }}</p>
+<!-- Also emits on change detection — auto unsubscribes -->
 
-<!-- Key/Value -->
-<div *ngFor="let item of object | keyvalue">
-  {{ item.key }}: {{ item.value }}
+<!-- Json — debugging -->
+<pre>{{ user | json }}</pre>                     <!-- {"name":"Alice","age":30} -->
+
+<!-- KeyValue — iterate objects -->
+<div *ngFor="let entry of user | keyvalue">
+  {{ entry.key }}: {{ entry.value }}
 </div>
 
-<!-- i18n Plural -->
+<!-- Slice — take subarrays/strings -->
+<p>{{ items | slice:0:5 }}</p>                  <!-- First 5 items -->
+<p>{{ 'hello world' | slice:0:5 }}</p>          <!-- 'hello' -->
+
+<!-- I18nPlural — locale-aware pluralization -->
 <p>{{ messages.length | i18nPlural:messageMapping }}</p>
+<!-- messageMapping = { =0: 'No messages', =1: '1 message', other: '# messages' } -->
 
-<!-- i18n Select -->
-<p>{{ gender | i18nSelect:genderMapping }}</p>
+<!-- I18nSelect — string value → display mapping -->
+<p>{{ user.gender | i18nSelect:genderMapping }}</p>
+<!-- genderMapping = { male: 'He', female: 'She', other: 'They' } -->
 
-<!-- Async — subscribes to Observable and updates on emission -->
-<p>{{ stream$ | async }}</p>
-<p *ngIf="data$ | async as data">{{ data.name }}</p>
+<!-- TitleCase — capitalize words -->
+<p>{{ 'hello world' | titlecase }}</p>           <!-- Hello World -->
 ```
-
-| Pipe | Purpose | Usage |
-|------|---------|-------|
-| `date` | Format dates | `date:'medium'`, `date:'yyyy-MM-dd'` |
-| `currency` | Format currency | `currency:'EUR':'symbol'` |
-| `number` | Format numbers | `number:'1.2-2'` |
-| `percent` | Format percentages | `percent:'1.0-2'` |
-| `uppercase` | Convert to uppercase | — |
-| `lowercase` | Convert to lowercase | — |
-| `titlecase` | Capitalize words | — |
-| `json` | JSON.stringify | Debugging |
-| `slice` | Slice arrays/strings | `slice:0:10` |
-| `keyvalue` | Object to key-value pairs | `*ngFor="let item of obj \| keyvalue"` |
-| `async` | Subscribe to Observables | Auto-unsubscribe |
-| `i18nPlural` | Plural rules | Internationalization |
-| `i18nSelect` | Gender/select mapping | Internationalization |
 
 ---
 
 ## Custom Pipes
 
-```typescript
-import { Pipe, PipeTransform } from '@angular/core';
-
-@Pipe({
-  name: 'truncate',
-  standalone: true,
-})
-export class TruncatePipe implements PipeTransform {
-  transform(value: string, maxLength = 20, suffix = '...'): string {
-    if (!value) return '';
-    if (value.length <= maxLength) return value;
-    return value.slice(0, maxLength) + suffix;
-  }
-}
-```
-
-```html
-<!-- Usage -->
-<p>{{ longText | truncate }}</p>             <!-- Default: 20 chars -->
-<p>{{ longText | truncate:50 }}</p>          <!-- 50 chars -->
-<p>{{ longText | truncate:30:'…' }}</p>      <!-- Custom suffix -->
-```
-
-### Pipe with dependency injection
+> [!info] Custom pipe
+> Create a custom pipe with `@Pipe({ name: 'myPipe' })`. Implement `PipeTransform` with a `transform(value, ...args): returnType` method. Pipes can inject services via `inject()`.
 
 ```typescript
 import { Pipe, PipeTransform, inject } from '@angular/core';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
-@Pipe({
-  name: 'countryName',
+// Simple pipe — no DI
+@Pipe({ name: 'truncate', standalone: true })
+export class TruncatePipe implements PipeTransform {
+  transform(value: string, maxLength: number = 100, suffix: string = '...'): string {
+    if (!value) return '';
+    return value.length > maxLength ? value.substring(0, maxLength) + suffix : value;
+  }
+}
+// Usage: {{ text | truncate:50:'. . .' }}
+
+// Pipe with injection
+@Pipe({ name: 'safeHtml', standalone: true })
+export class SafeHtmlPipe implements PipeTransform {
+  private sanitizer = inject(DomSanitizer);
+
+  transform(value: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(value);
+  }
+}
+// Usage: <div [innerHtml]="content | safeHtml"></div>
+
+// Pipe with multiple arguments
+@Pipe({ name: 'filterBy', standalone: true })
+export class FilterByPipe implements PipeTransform {
+  transform<T extends Record<string, any>>(items: T[], field: keyof T, value: any): T[] {
+    if (!items || !field) return items;
+    return items.filter(item => item[field] === value);
+  }
+}
+// Usage: {{ users | filterBy:'role':'admin' }}
+```
+
+### Pipe transform signature
+
+```typescript
+interface PipeTransform {
+  transform(value: T, ...args: any[]): R;
+}
+// value:     the input data (required)
+// ...args:   optional parameters after the colon: | pipeName:arg1:arg2
+// return:    the transformed output
+```
+
+---
+
+## Stateful and Impure Pipes
+
+> [!info] Pure vs impure
+> By default, pipes are **pure** — they only re-evaluate when the input value reference changes. **Impure** pipes (`pure: false`) re-evaluate on every change detection cycle. Use pure by default; impure only when necessary (and understand the performance cost).
+
+```typescript
+// Pure pipe (default) — only runs when value reference changes
+@Pipe({ name: 'pure', standalone: true })
+// pure: true is the default — change detection does NOT re-evaluate
+
+// Impure pipe — runs EVERY change detection cycle (expensive!)
+@Pipe({ name: 'impure', pure: false, standalone: true })
+export class ImpureExamplePipe implements PipeTransform {
+  transform(value: any[]): any[] {
+    console.log('Runs on every CD cycle!');
+    return [...value].sort();
+  }
+}
+
+// When impure is needed:
+// 1. Array/object mutations (new reference not created)
+// 2. Stateful pipes (maintain internal state)
+// 3. Real-time data streams
+
+// Stateful pipe example — keeps internal counter
+@Pipe({ name: 'counter', pure: false, standalone: true })
+export class CounterPipe implements PipeTransform {
+  private count = 0;
+
+  transform(value: any): string {
+    return `${value} — called ${++this.count} times`;
+  }
+}
+
+// ⚠️  Impure with no caching is expensive:
+// Avoid: impure pipes that do heavy computation (sort, filter, API calls)
+// Prefer: memoizing computed signals, pure pipes with new references
+```
+
+---
+
+## `async` Pipe and `@let`
+
+> [!info] async pipe
+> The `| async` pipe subscribes to an `Observable` or `Promise`, returns the latest emitted value, and auto-unsubscribes when the component is destroyed. Combined with `@let` (Angular 18+), async data becomes reactive without `subscribe()`.
+
+```typescript
+import { Component, inject } from '@angular/core';
+import { AsyncPipe, JsonPipe } from '@angular/common';
+import { Observable } from 'rxjs';
+import { UserService } from './user.service';
+
+@Component({
+  selector: 'app-users',
   standalone: true,
+  imports: [AsyncPipe, JsonPipe],
+  template: `
+    <!-- Basic async — auto-subscribe + auto-unsubscribe -->
+    <p>{{ users$ | async | json }}</p>
+
+    <!-- Handling loading state with @let (Angular 18+) -->
+    @let users = (users$ | async);
+    @if (users) {
+      <div *ngFor="let user of users">{{ user.name }}</div>
+    } @else {
+      <p>Loading...</p>
+    }
+
+    <!-- Multiple asyncs with object destructuring -->
+    @let data = { user: (user$ | async), orders: (orders$ | async) };
+    @if (data.user && data.orders) {
+      <p>{{ data.user.name }} — {{ data.orders.length }} orders</p>
+    }
+
+    <!-- Default value with async -->
+    <p>{{ (data$ | async) ?? 'Loading...' }}</p>
+
+    <!-- Promise with async -->
+    <p>{{ promiseData | async }}</p>
+  `
 })
-export class CountryNamePipe implements PipeTransform {
-  private http = inject(HttpClient);  // ❌ Not recommended — avoid DI in pipes
-
-  transform(code: string): string {
-    // Prefer a pure transformation without DI
-    const countries: Record<string, string> = {
-      US: 'United States',
-      GB: 'United Kingdom',
-      DE: 'Germany',
-    };
-    return countries[code] ?? code;
-  }
+export class UsersComponent {
+  private userService = inject(UserService);
+  users$: Observable<User[]> = this.userService.getUsers();
 }
 ```
 
-### Pipe with arguments
-
-```typescript
-@Pipe({ name: 'filter', standalone: true })
-export class FilterPipe implements PipeTransform {
-  transform<T>(items: T[], searchFn: (item: T) => boolean): T[] {
-    return items.filter(searchFn);
-  }
-}
-```
+### `async` pipe and `*ngIf` pattern (pre-`@let`)
 
 ```html
-<!-- Usage — passing a function reference -->
-<div *ngFor="let user of users | filter: activeFilter">
-  {{ user.name }}
+<!-- Manual subscription variable (older pattern) -->
+<div *ngIf="users$ | async as users">
+  <p>{{ users.length }} users loaded</p>
 </div>
+
+<!-- With else block -->
+<div *ngIf="users$ | async as users; else loading">
+  <div *ngFor="let user of users">{{ user.name }}</div>
+</div>
+<ng-template #loading><p>Loading users...</p></ng-template>
 ```
 
 ---
 
-## Pure vs Impure Pipes
+## Pipes in TypeScript
 
 ```typescript
-// Pure pipe (default) — only re-evaluates when input reference changes
-@Pipe({
-  name: 'purePipe',
-  pure: true,       // default
+// Using pipes programmatically (not just templates):
+import { DatePipe, CurrencyPipe } from '@angular/common';
+
+@Component({ ... })
+export class ReportService {
+  private datePipe = inject(DatePipe);
+  private currencyPipe = inject(CurrencyPipe);
+
+  formatReport(date: Date, amount: number): string {
+    const formattedDate = this.datePipe.transform(date, 'mediumDate');
+    const formattedAmount = this.currencyPipe.transform(amount, 'USD', 'symbol', '1.2-2');
+    return `${formattedDate}: ${formattedAmount}`;
+  }
+}
+
+// Provide pipe at component level to make injectable
+@Component({
+  providers: [DatePipe, CurrencyPipe]
 })
-export class PurePipe implements PipeTransform { ... }
-
-// Impure pipe — re-evaluates on every change detection cycle
-@Pipe({
-  name: 'impurePipe',
-  pure: false,
-})
-export class ImpurePipe implements PipeTransform { ... }
-```
-
-```mermaid
-flowchart TD
-    A[Pipe] --> B{Pure?}
-    B -->|Yes| C["Re-evaluates only when input reference changes"]
-    B -->|No| D["Re-evaluates on EVERY change detection cycle"]
-    C --> E["Fast — cached result"]
-    D --> F["Slow — use sparingly"]
-```
-
-| Aspect | Pure pipe | Impure pipe |
-|--------|-----------|-------------|
-| **When it runs** | On input reference change | Every change detection cycle |
-| **Performance** | Fast (cached) | Slow — use only when necessary |
-| **Default** | ✅ Yes | ❌ Must set `pure: false` |
-| **When to use** | String/number/immutable transformations | Array filtering (where you mutate the array) |
-
-**When to use impure pipes:** Almost never. For filtering/sorting collections, compute the result in the component class instead.
-
----
-
-## Pipe Composition
-
-```html
-<!-- Pipes chain left to right -->
-<p>{{ value | currency | uppercase }}</p>
-<!-- First: currency pipe formats the number
-     Then: uppercase pipe converts the result -->
-
-<p>{{ date | date:'fullDate' | uppercase }}</p>
-<!-- "WEDNESDAY, MAY 3, 2026" -->
-
-<!-- async + other pipes -->
-<p>{{ stream$ | async | json }}</p>
 ```
 
 ---
 
-## Pipe Composition
-
-```html
-<!-- Pipes chain left to right -->
-<p>{{ value | currency | uppercase }}</p>
-<!-- First: currency pipe formats the number
-     Then: uppercase pipe converts the result -->
-
-<p>{{ date | date:'fullDate' | uppercase }}</p>
-<!-- "WEDNESDAY, MAY 3, 2026" -->
-
-<!-- async + other pipes -->
-<p>{{ stream$ | async | json }}</p>
-```
-
-```mermaid
-flowchart LR
-    A["Template: {{ value | currency | uppercase }}"] --> B["raw value: 42.99"]
-    B --> C["currency pipe → '$42.99'"]
-    C --> D["uppercase pipe → '$42.99'"]
-    D --> E["Rendered output"]
-```
-
----
-
-## Pitfalls
-
-### Pipes re-evaluate for every change detection
-
-An impure pipe that filters a large array runs on every change detection — causing performance issues.
-
-**Fix**: Use `pure: true` and ensure the array reference changes when data changes. For filtering, compute in the component.
-
-### Pipes with expensive computation
+## Pipe Testing
 
 ```typescript
-// ❌ Bad: computed on every change detection (even if input hasn't changed)
-transform(items: HeavyItem[]) { /* heavy computation */ }
+import { TruncatePipe } from './truncate.pipe';
+
+describe('TruncatePipe', () => {
+  const pipe = new TruncatePipe();
+
+  it('should return empty string for null/undefined', () => {
+    expect(pipe.transform('', 5)).toBe('');
+    expect(pipe.transform(null as any, 5)).toBe('');
+  });
+
+  it('should not truncate short text', () => {
+    expect(pipe.transform('hello', 10)).toBe('hello');
+  });
+
+  it('should truncate long text with default suffix', () => {
+    expect(pipe.transform('hello world', 5)).toBe('hello...');
+  });
+
+  it('should truncate with custom suffix', () => {
+    expect(pipe.transform('hello world', 5, '[...]')).toBe('hello[...]');
+  });
+});
+
+// Testing pipe with DI (SafeHtmlPipe uses DomSanitizer):
+import { SafeHtmlPipe } from './safe-html.pipe';
+import { TestBed } from '@angular/core/testing';
+
+describe('SafeHtmlPipe', () => {
+  let pipe: SafeHtmlPipe;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    pipe = TestBed.runInInjectionContext(() => new SafeHtmlPipe());
+  });
+
+  it('should bypass HTML', () => {
+    const result = pipe.transform('<script>alert("xss")</script>');
+    expect(result).toBeDefined();
+  });
+});
 ```
-
-**Fix**: Keep transformations light in pipes. Use component methods or NgRx selectors for heavy work.
-
-### Missing `standalone: true`
-
-In standalone projects, custom pipes must have `standalone: true` and be imported in the component's `imports` array.
 
 ---
 
-> [!question]- Interview Questions
->
-> **Q: What is the difference between a pure and an impure pipe?**
-> A: Pure pipes re-evaluate only when the input reference changes — fast and cached. Impure pipes re-evaluate on every change detection cycle — slower, use sparingly. Pipes are pure by default.
->
-> **Q: How do you create a custom pipe with parameters?**
-> A: Implement `PipeTransform` with a `transform(value, ...args)` method. Add parameters after the pipe name in the template: `{{ value | pipeName:arg1:arg2 }}`.
->
-> **Q: What is the `async` pipe and why is it recommended?**
-> A: The `async` pipe subscribes to an Observable, renders its latest value, and automatically unsubscribes when the component is destroyed. It also triggers change detection on each emission — making it the safest way to use Observables in templates.
+## Performance Optimization
+
+```text
+Pipe performance rules:
+
+1. Prefer PURE pipes (default). Only use impure when you must.
+   Pure pipes run once per reference change. Impure run every CD cycle.
+
+2. Avoid heavy computation in impure pipes.
+   No sorting, filtering, or API calls in impure pipes. Use memoized
+   computed() signals or transform data before passing to template.
+
+3. Async pipe automatically handles subscription lifecycle.
+   Never subscribe() inside a pipe — use inject() for services instead.
+
+4. Pipe purity cheat sheet:
+                                    Pure          Impure
+   Re-evaluates on:              Reference change  Every CD cycle
+   Array.sort() result           ❌ (same ref)      ✅
+   Object mutation               ❌                 ✅
+   Service.inject()              ✅                 ✅
+   Performance                   Fast              Slow (avoid)
+```
 
 ---
 
 ## Cross-Links
 
-- [[Angular/02_Core/03_RxJS_in_Angular]] for the async pipe
-- [[Angular/02_Core/02_Signals_Essentials]] for signal-based data transformation
-- [[Angular/02_Core/01_Standalone_Components]] for importing pipes
+- [[Angular/02_Core/02_Signals_Essentials]] for `computed()` as an alternative to impure pipes
+- [[Angular/02_Core/03_RxJS_in_Angular]] for async pipe with Observables
+- [[Angular/03_Advanced/01_Change_Detection_and_Performance]] for change detection impact
+- [[Angular/03_Advanced/02_Testing_Angular_Components]] for component-level testing

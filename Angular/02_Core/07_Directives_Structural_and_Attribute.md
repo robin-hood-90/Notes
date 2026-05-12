@@ -1,248 +1,345 @@
 ---
-tags: [angular, core, directives, structural, attribute, custom]
-aliases: ["Angular Directives", "Structural Directives", "Attribute Directives", "Custom Directives"]
+tags: [angular, core, directives, structural, attribute, custom, host-binding, host-listener, template-ref, view-container-ref, microsyntax, host-directives]
+aliases: ["Angular Directives Deep Dive", "Structural Directives", "Attribute Directives", "Custom Directives", "Host Directives"]
 status: stable
-updated: 2026-05-03
+updated: 2026-05-11
 ---
 
-# Directives: Structural and Attribute
+# Directives: Structural, Attribute, and Advanced Patterns
 
 > [!summary] Goal
-> Use built-in structural and attribute directives and create custom directives for reusable DOM behavior.
+> Master Angular directives: `@Directive` selector types, `@HostBinding`/`@HostListener` (decorator vs function form), structural directive microsyntax desugaring, `TemplateRef`+`ViewContainerRef` API, directive composition via `hostDirectives`, `@defer` triggers, and directive testing.
 
 ## Table of Contents
 
-1. [Why Directives Matter](#why-directives-matter)
-2. [Attribute Directives](#attribute-directives)
-3. [Structural Directives](#structural-directives)
-4. [Custom Structural Directive](#custom-structural-directive)
-5. [`trackBy` for Performance](#trackby-for-performance)
-6. [Pitfalls](#pitfalls)
+1. [@Directive Selector Types](#directive-selector-types)
+2. [Attribute Directives — Deep Patterns](#attribute-directives--deep-patterns)
+3. [Structural Directives — Microsyntax and Internals](#structural-directives--microsyntax-and-internals)
+4. [Directive Composition (hostDirectives)](#directive-composition-hostdirectives)
+5. [defer Triggers and Templates](#defer-triggers-and-templates)
+6. [Directive Testing](#directive-testing)
 
 ---
 
-## Why Directives Matter
+## `@Directive` Selector Types
 
-Directives add behavior to existing DOM elements. **Attribute directives** change appearance or behavior. **Structural directives** add/remove elements from the DOM.
+> [!info] Directive selector
+> The `selector` defines which DOM elements the directive applies to. Selectors follow CSS selector syntax with extensions for attribute bindings.
 
----
-
-## Attribute Directives
-
-Attribute directives change the appearance or behavior of an element without adding/removing it:
+| Selector | Matches | Example |
+|:---------|:--------|:--------|
+| `[appHighlight]` | Elements with attribute `appHighlight` | `<div appHighlight>` |
+| `.my-class` | Elements with CSS class `my-class` | `<div class="my-class">` |
+| `button[appConfirm]` | `<button>` elements with the attribute | `<button appConfirm>` |
+| `:not(.ignore)` | Elements NOT matching `.ignore` | Bypass the directive |
+| `[appColor="red"]` | Elements with exact attribute value | `<div appColor="red">` |
+| `[dir]` | All elements (too broad — avoid) | Any element |
 
 ```typescript
-import { Directive, ElementRef, HostListener, HostBinding, Input } from '@angular/core';
-
 @Directive({
-  selector: '[appHighlight]',
+  selector: '[appHighlight]',    // Attribute selector — most common
   standalone: true,
 })
+export class HighlightDirective { /* ... */ }
+```
+
+---
+
+## Attribute Directives — Deep Patterns
+
+### `@HostBinding` — decorator vs function form
+
+```typescript
+// Decorator form (simpler for common cases):
+@Directive({ selector: '[appHighlight]', standalone: true })
 export class HighlightDirective {
-  @Input() appHighlight = 'yellow';  // Default highlight color
-
-  // Bind to the host element's style
   @HostBinding('style.backgroundColor') bgColor?: string;
+  @HostBinding('class.active') isActive = false;
+  @HostBinding('attr.aria-label') label = 'highlighted element';
+  @HostBinding('style.padding.px') padding = 8;          // Unit suffix
+}
 
-  // Listen to events on the host element
-  @HostListener('mouseenter') onMouseEnter() {
-    this.bgColor = this.appHighlight;
-  }
+// Function form (more flexible — use when you need logic):
+@Directive({ selector: '[appHighlight]', standalone: true })
+export class HighlightDirective {
+  private hostElement = inject(ElementRef).nativeElement as HTMLElement;
 
-  @HostListener('mouseleave') onMouseLeave() {
-    this.bgColor = undefined;
+  constructor() {
+    // @HostBinding function — can include conditions
+    HostBinding('style.backgroundColor')
+    get bgColor() { return this.isActive ? this.highlightColor : 'transparent'; }
+
+    // Fallback: set directly on init
+    setStyle();
   }
 }
 ```
 
-```html
-<!-- Usage -->
-<p appHighlight>Default yellow highlight</p>
-<p appHighlight="lightblue">Blue highlight</p>
-```
-
-### Built-in attribute directives
-
-```html
-<!-- ngClass — dynamic CSS classes -->
-<div [ngClass]="{
-  active: isActive,
-  disabled: !isEnabled,
-  highlighted: isHighlighted
-}">...</div>
-
-<!-- ngStyle — dynamic inline styles -->
-<div [ngStyle]="{
-  color: textColor,
-  'font-size': fontSize + 'px',
-  'background-color': bgColor
-}">...</div>
-```
-
----
-
-## Structural Directives
-
-Structural directives add/remove elements from the DOM. They start with `*` — Angular's microsyntax shorthand.
-
-### `*ngIf`
-
-```html
-<!-- Basic condition -->
-<div *ngIf="isLoggedIn">Welcome back!</div>
-
-<!-- With else block -->
-<div *ngIf="isLoggedIn; else loginPrompt">Welcome back!</div>
-<ng-template #loginPrompt>Please sign in.</ng-template>
-
-<!-- With then and else -->
-<div *ngIf="isLoggedIn; then welcome; else loginPrompt"></div>
-<ng-template #welcome>Welcome!</ng-template>
-<ng-template #loginPrompt>Please sign in.</ng-template>
-```
-
-### `*ngFor`
-
-```html
-<!-- Basic iteration -->
-<div *ngFor="let user of users">{{ user.name }}</div>
-
-<!-- With local variables -->
-<div *ngFor="let user of users; trackBy: trackFn; index as i; first as f; last as l; even as e; odd as o">
-  {{ i }}: {{ user.name }} <span *ngIf="f">(first)</span>
-</div>
-```
-
-### `*ngSwitch`
-
-```html
-<div [ngSwitch]="status">
-  <p *ngSwitchCase="'loading'">Loading...</p>
-  <p *ngSwitchCase="'success'">Data loaded</p>
-  <p *ngSwitchCase="'error'">Error occurred</p>
-  <p *ngSwitchDefault>Unknown status</p>
-</div>
-```
-
----
-
-## Custom Structural Directive
-
-Structural directives use `TemplateRef` and `ViewContainerRef`:
+### `@HostListener` — event targets and `$event`
 
 ```typescript
-import { Directive, Input, TemplateRef, ViewContainerRef } from '@angular/core';
+@Directive({ selector: '[appHighlight]', standalone: true })
+export class HighlightDirective {
+  @HostListener('mouseenter', ['$event']) onMouseEnter(event: MouseEvent) { }
+  @HostListener('mouseleave') onMouseLeave() { }
+  @HostListener('window:keydown.escape') onEscape() { }     // Global keydown
+  @HostListener('document:click', ['$event.target']) onDocClick(target: HTMLElement) { }
+  @HostListener(':mouseenter') onSelfEnter() { }             // ':' = self
+}
+```
 
+### `exportAs` — template variable access
+
+```typescript
 @Directive({
-  selector: '[appHasPermission]',
+  selector: '[appCountdown]',
+  exportAs: 'countdown',          // Makes directive accessible in template
   standalone: true,
 })
-export class HasPermissionDirective {
-  private templateRef = inject(TemplateRef<any>);
-  private viewContainer = inject(ViewContainerRef);
+export class CountdownDirective {
+  secondsLeft = 10;
+  start() { /* timer logic */ }
+}
+```
+```html
+<div appCountdown #timer="countdown">
+  {{ timer.secondsLeft }}
+  <button (click)="timer.start()">Start</button>
+</div>
+```
 
-  @Input() set appHasPermission(permission: string) {
-    const userPermissions = ['admin', 'editor'];
-    if (userPermissions.includes(permission)) {
-      this.viewContainer.createEmbeddedView(this.templateRef);
-    } else {
-      this.viewContainer.clear();
+---
+
+## Structural Directives — Microsyntax and Internals
+
+> [!info] Structural directive
+> Structural directives change the DOM layout by adding/removing elements. They use the `*` prefix, which is syntactic sugar for `<ng-template>` binding. The `*` desugars into an `<ng-template>` with the directive applied.
+
+### Microsyntax desugaring
+
+```html
+<!-- Shorthand (what you write): -->
+<div *ngFor="let user of users; trackBy: trackFn; index as i">{{ user.name }}</div>
+
+<!-- Desugared (what Angular generates): -->
+<ng-template ngFor [ngForOf]="users" [ngForTrackBy]="trackFn" let-user="$implicit" let-i="index">
+  <div>{{ user.name }}</div>
+</ng-template>
+```
+
+```html
+<!-- *ngIf desugaring: -->
+<div *ngIf="isVisible; else loading">Content</div>
+<ng-template #loading>Loading...</ng-template>
+
+<!-- Becomes: -->
+<ng-template [ngIf]="isVisible" [ngIfElse]="loading">
+  <div>Content</div>
+</ng-template>
+```
+
+### `TemplateRef` and `ViewContainerRef` — custom structural directive
+
+```typescript
+import { Directive, Input, TemplateRef, ViewContainerRef, inject } from '@angular/core';
+
+@Directive({
+  selector: '[appIfNot]',
+  standalone: true,
+})
+export class IfNotDirective {
+  private templateRef = inject(TemplateRef<any>);
+  private vcr = inject(ViewContainerRef);
+  private hasView = false;
+
+  @Input() set appIfNot(condition: boolean) {
+    if (!condition && !this.hasView) {
+      this.vcr.createEmbeddedView(this.templateRef);
+      this.hasView = true;
+    } else if (condition && this.hasView) {
+      this.vcr.clear();
+      this.hasView = false;
+    }
+  }
+
+  // With context object (let-x pattern):
+  @Input() set appIfNotElse(template: TemplateRef<any>) {
+    // Store alternate template
+  }
+}
+```
+```html
+<div *appIfNot="isDisabled">Shown when isDisabled is false</div>
+```
+
+### Context objects — `let-x` from directive
+
+```typescript
+@Directive({ selector: '[appRepeat]', standalone: true })
+export class RepeatDirective {
+  constructor(
+    private templateRef: TemplateRef<{ $implicit: number; index: number }>,
+    private vcr: ViewContainerRef,
+  ) {}
+
+  private _count = 0;
+  @Input() set appRepeat(count: number) {
+    this.vcr.clear();
+    for (let i = 0; i < count; i++) {
+      this.vcr.createEmbeddedView(this.templateRef, {
+        $implicit: i + 1,      // let-value = $implicit
+        index: i,              // let-idx = index
+      });
     }
   }
 }
 ```
-
 ```html
-<!-- Usage -->
-<div *appHasPermission="'admin'">Admin content — only visible to admins</div>
+<div *appRepeat="5; let value; let idx = index">
+  Item {{ idx }}: {{ value }}
+</div>
+<!-- Output: Item 0: 1, Item 1: 2, etc. -->
 ```
 
-### How structural directives work
+### `trackBy` deep
 
-```mermaid
-flowchart TD
-    A["*ngIf='condition'"] --> B{Condition is true?}
-    B -->|Yes| C["TemplateRef → ViewContainerRef.createEmbeddedView"]
-    B -->|No| D["ViewContainerRef.clear()"]
-    C --> E["Element rendered in DOM"]
-    D --> F["Element removed from DOM"]
+```typescript
+// Without trackBy — re-renders ALL items on every change
+<div *ngFor="let user of users">{{ user.id }}</div>
+
+// With trackBy — only re-renders changed items
+<div *ngFor="let user of users; trackBy: trackById">{{ user.id }}</div>
+
+trackById(index: number, user: User): string {
+  return user.id;   // Unique identifier
+}
+// Using a primitive ID lets Angular reuse DOM elements
+// rather than destroying/recreating them — significant perf gain
 ```
 
 ---
 
-## `trackBy` for Performance
+## Directive Composition (`hostDirectives`)
 
-`trackBy` tells Angular how to identify items in a list — preventing unnecessary DOM operations:
+> [!info] Host directives
+> `hostDirectives` allows a component or directive to apply another directive to its host element. This is the Angular composition API — compose behavior from smaller directives without inheritance.
 
 ```typescript
-@Component({ template: `
-  <div *ngFor="let user of users; trackBy: trackByUserId">
-    {{ user.name }}
-  </div>
-`})
-export class UserListComponent {
-  trackByUserId(index: number, user: User): number {
-    return user.id;  // Unique identifier
-  }
+// Composable behavior directives:
+@Directive({ selector: '[appTooltip]', standalone: true })
+export class TooltipDirective { /* tooltip logic */ }
+
+@Directive({ selector: '[appClickOutside]', standalone: true })
+export class ClickOutsideDirective { /* click outside logic */ }
+
+// Compose both into a dropdown:
+@Component({
+  selector: 'app-dropdown',
+  standalone: true,
+  hostDirectives: [
+    TooltipDirective,
+    {
+      directive: ClickOutsideDirective,
+      inputs: ['appClickOutside: closeOnOutsideClick' ],
+    },
+  ],
+  template: `...`
+})
+export class DropdownComponent { }
+
+// Now <app-dropdown> has tooltip + click-outside behavior
+```
+
+---
+
+## `@defer` Triggers and Templates
+
+> [!info] Deferred loading
+> `@defer` (Angular 17+) lazy-loads a block of templates. It supports triggers (`on viewport`, `on interaction`, `on idle`, `on immediate`, `on timer`) and placeholder/loading/error states.
+
+```html
+<!-- @defer with triggers -->
+@defer (on viewport) {
+  <heavy-component />
+} @placeholder {
+  <p>Scroll here to load</p>
+}
+
+@defer (on interaction) {
+  <comment-section />
+} @placeholder {
+  <button>Load comments</button>
+}
+
+@defer (on timer(5s)) {
+  <analytics-widget />
+}
+
+@defer (on immediate) {
+  <above-the-fold-widget />
+}
+
+<!-- With loading and error states -->
+@defer (on viewport; prefetch on idle) {
+  <full-calendar />
+} @loading {
+  <spinner />
+} @error {
+  <p>Failed to load calendar</p>
 }
 ```
 
-```mermaid
-flowchart LR
-    A["List changes"] --> B{Has trackBy?}
-    B -->|No| C["Destroy all DOM elements"]
-    C --> D["Recreate all DOM elements"]
-    B -->|Yes| E["Match existing items by key"]
-    E --> F["Only add/remove/change changed items"]
-    F --> G["Preserve unchanged DOM elements"]
-```
-
 ---
 
-## Pitfalls
+## Directive Testing
 
-### Multiple structural directives on the same element
+```typescript
+import { TestBed, ComponentFixture } from '@angular/core/testing';
+import { Component, DebugElement } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { HighlightDirective } from './highlight.directive';
 
-```html
-<!-- ❌ Error: Can't have multiple structural directives -->
-<div *ngIf="visible" *ngFor="let item of items">...</div>
+// Test host component
+@Component({
+  standalone: true,
+  imports: [HighlightDirective],
+  template: `<p appHighlight="yellow" [class.active]="isActive">Test</p>`
+})
+class TestHostComponent { isActive = true; }
+
+describe('HighlightDirective', () => {
+  let fixture: ComponentFixture<TestHostComponent>;
+  let pEl: DebugElement;
+
+  beforeEach(() => {
+    fixture = TestBed.configureTestingModule({
+      imports: [HighlightDirective, TestHostComponent],
+    }).createComponent(TestHostComponent);
+    fixture.detectChanges();
+    pEl = fixture.debugElement.query(By.css('[appHighlight]'));
+  });
+
+  it('should set background on mouseenter', () => {
+    pEl.triggerEventHandler('mouseenter');
+    fixture.detectChanges();
+    expect(pEl.nativeElement.style.backgroundColor).toBe('yellow');
+  });
+
+  it('should clear background on mouseleave', () => {
+    pEl.triggerEventHandler('mouseenter');
+    fixture.detectChanges();
+    pEl.triggerEventHandler('mouseleave');
+    fixture.detectChanges();
+    expect(pEl.nativeElement.style.backgroundColor).toBe('');
+  });
+});
 ```
-
-**Fix**: Use `<ng-container>` to wrap one of them:
-
-```html
-<ng-container *ngFor="let item of items">
-  <div *ngIf="visible">{{ item }}</div>
-</ng-container>
-```
-
-### `trackBy` not set for large lists
-
-Without `trackBy`, Angular destroys and recreates ALL list items on every change — causing performance issues in large lists.
-
-**Fix**: Always set `trackBy` for lists that can change after initial render.
-
-### `[ngClass]` and `[class.*]` conflicts
-
-When both `[ngClass]` and `[class.active]` set the same class, `[class.active]` wins.
-
----
-
-> [!question]- Interview Questions
->
-> **Q: What is the difference between attribute and structural directives?**
-> A: Attribute directives change the appearance or behavior of elements (e.g., ngClass, ngStyle). Structural directives add/remove elements from the DOM (e.g., ngIf, ngFor).
->
-> **Q: How does `*ngFor` with `trackBy` improve performance?**
-> A: `trackBy` provides a unique identifier for each item. When the list changes, Angular reuses existing DOM elements for items that didn't change, instead of destroying and recreating them.
->
-> **Q: How do structural directives work internally?**
-> A: The `*` prefix is syntactic sugar. Angular converts `*ngIf="condition"` to `<ng-template [ngIf]="condition">` with `TemplateRef` and `ViewContainerRef` controlling when the embedded view is created or destroyed.
 
 ---
 
 ## Cross-Links
 
-- [[Angular/01_Foundations/02_Components_Templates_and_Data_Binding]] for template bindings
-- [[Angular/02_Core/05_Forms_Template_vs_Reactive]] for ngModel directive
-- [[Angular/01_Foundations/03_DI_Services_and_Providers]] for DI in directives
+- [[Angular/02_Core/05_Forms_Template_vs_Reactive]] for structural directives in forms
+- [[Angular/03_Advanced/01_Change_Detection_and_Performance]] for change detection with trackBy
+- [[Angular/03_Advanced/02_Testing_Angular_Components]] for component test setup
+- [[Angular/01_Foundations/02_Components_Templates_and_Data_Binding]] for `@defer` and `ng-template`
