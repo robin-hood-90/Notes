@@ -40,12 +40,12 @@ Angular has a hierarchy of injectors:
 
 ```mermaid
 flowchart TD
-    P[PlatformInjector] --> R[RootInjector<br>providedIn: 'root']
-    R --> M[RouteInjector<br>Route providers]
-    R --> C1[ComponentInjector A<br>providers: []]
-    R --> C2[ComponentInjector B<br>providers: []]
-    M --> C3[ComponentInjector C]
-    C1 --> C4[Child Component<br>Inherits from C1]
+    P["Platform Injector"] --> R["Root Injector<br/>providedIn: 'root'"]
+    R --> M["Route Injector<br/>Route providers"]
+    R --> C1["Component Injector A<br/>providers: []"]
+    R --> C2["Component Injector B<br/>providers: []"]
+    M --> C3["Component Injector C"]
+    C1 --> C4["Child Component<br/>Inherits from C1"]
 ```
 
 | Injector level | `providedIn` / provider location | Lifetime |
