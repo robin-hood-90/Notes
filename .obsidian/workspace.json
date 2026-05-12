@@ -186,6 +186,7 @@
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
     "HttpErrorCodes.md",
+    "DSA/Algorithms.md",
     "Angular/02_Core/13_Error_Handling.md",
     "Angular/02_Core/16_Interceptors_Deep_Dive.md",
     "Angular/02_Core/03_RxJS_in_Angular.md",
@@ -197,7 +198,6 @@
     "Angular/02_Core/17_Modules_and_NgModule_Deep_Dive.md",
     "Angular/02_Core/15_Route_Guards_Deep_Dive.md",
     "1-arrays.md",
-    "DSA/Algorithms.md",
     "CICD/Kubernetes/01_Foundations/00_Kubernetes_Components_Reference.md",
     "DSA/sed3g86ck",
     "CICD/Terraform/05_Projects/02_Multi_Region_EKS_with_CI_CD.md",

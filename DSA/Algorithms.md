@@ -1489,6 +1489,8 @@ flowchart LR
     end
 
 ```
+
+```
 Kruskal():
     sort edges by weight
     MST = []
@@ -1511,6 +1513,8 @@ flowchart LR
     end
 
 ```
+```
+
 Prim(source):
     visited[1 .. V] = false
     pq = MinHeap([(0, source)])         # (weight, vertex)
@@ -1537,8 +1541,9 @@ Prim(source):
 - **Kahn's Algorithm (BFS)**: Use in-degree array; enqueue nodes with in-degree 0
 - **DFS-based**: Append to result in reverse post-order
 
-```
+
 # Kahn's Algorithm
+```
 TopologicalSort():
     inDegree = compute in-degrees
     queue = all nodes with inDegree == 0
@@ -1785,6 +1790,50 @@ flowchart LR
 | **Aho-Corasick** | O(Σ patterns) | O(n + matches) | Multi-pattern |
 | **Boyer-Moore** | O(m + alphabet) | O(n/m) best | O(n + m) avg |
 | **Suffix Array** | O(n log n) | O(m log n) | O(n log n) build |
+
+#### Naive (Brute Force) String Search
+
+> [!info] Naive search
+> Slide the pattern over the text character by character. At each position, compare all `m` characters. If every character matches, record the match position. The simplest pattern-matching algorithm — useful for short patterns (m ≤ 5) or as a correctness baseline for advanced algorithms.
+
+```
+NaiveSearch(text[1 .. n], pattern[1 .. m]):
+    matches ← []
+    for i ← 1 to n - m + 1:           // Slide pattern over text
+        j ← 1
+        while j ≤ m and text[i + j - 1] = pattern[j]:
+            j ← j + 1                 // Compare character by character
+        if j = m + 1:                 // All m characters matched
+            matches.append(i)         // Pattern found at position i
+    return matches
+```
+
+| Operation | Complexity |
+|:---------:|:----------:|
+| Time (worst) | O(n * m) |
+| Time (average) | O(n — early exit on mismatch) |
+| Space | O(1) |
+
+**Worst-case**: pattern = `"AAAA"`, text = `"AAAAAAAA"` — every shift compares all 4 characters.
+**Best-case**: first character of pattern never matches — O(n) total comparisons.
+
+```text
+Example: text = "ABABC", pattern = "ABC"
+
+Shift 0: A B A B C    Compare: A→A ✓  B→B ✓  A→C ✗  → mismatch at position 3
+          | | |
+          A B C
+          
+Shift 1: A B A B C    Compare: B→A ✗  → mismatch at position 1
+            |
+            A B C
+            
+Shift 2: A B A B C    Compare: A→A ✓  B→B ✓  C→C ✓  → found at position 3
+              | | |
+              A B C
+
+Matches found at index 3.
+```
 
 #### KMP (Knuth-Morris-Pratt)
 
