@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DSA/DataStructures.md",
+                "file": "DSA/Algorithms.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "DataStructures"
+              "title": "Algorithms"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "DataStructures.md",
+                "file": "DSA/Algorithms.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for DataStructures"
+              "title": "Backlinks for Algorithms"
             }
           },
           {
@@ -185,11 +185,18 @@
   },
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
-    "Angular/02_Core/17_Modules_and_NgModule_Deep_Dive.md",
+    "HttpErrorCodes.md",
+    "Angular/02_Core/13_Error_Handling.md",
     "Angular/02_Core/16_Interceptors_Deep_Dive.md",
+    "Angular/02_Core/03_RxJS_in_Angular.md",
+    "Angular/02_Core/04_HttpClient_and_Interceptors.md",
+    "Angular/02_Core/05_Forms_Template_vs_Reactive.md",
+    "Angular/02_Core/06_Pipes_BuiltIn_and_Custom.md",
+    "Angular/02_Core/07_Directives_Structural_and_Attribute.md",
+    "DSA/DataStructures.md",
+    "Angular/02_Core/17_Modules_and_NgModule_Deep_Dive.md",
     "Angular/02_Core/15_Route_Guards_Deep_Dive.md",
     "1-arrays.md",
-    "DSA/DataStructures.md",
     "DSA/Algorithms.md",
     "CICD/Kubernetes/01_Foundations/00_Kubernetes_Components_Reference.md",
     "DSA/sed3g86ck",
@@ -205,13 +212,6 @@
     "CICD/Kubernetes/02_Core/09_VPA_PriorityClass_kubeconfig_Descheduler.md",
     "CICD/Kubernetes/03_Advanced/07_Service_Mesh_and_Gateway_API.md",
     "CICD/Kubernetes/02_Core/08_PDB_ClusterAutoscaler_AdmissionControllers.md",
-    "CICD/Kubernetes/03_Advanced/06_CRDs_and_Operators.md",
-    "CICD/Harness/05_Projects/03_Multi_Stage_CI_CD_with_Security_and_SLO.md",
-    "CICD/Harness/05_Projects/02_GitOps_PR_Pipeline_with_Image_Updater.md",
-    "CICD/Harness/05_Projects/01_Full_CD_Pipeline_with_Approvals_Rollback.md",
-    "CICD/Harness/04_Playbooks/05_Harness_Governance_OPA_Rules.md",
-    "CICD/Harness/04_Playbooks/04_Troubleshoot_CI_Builds.md",
-    "CICD/Harness/04_Playbooks/03_Troubleshoot_GitOps_Agents.md",
     "C++/06_Build_Systems",
     "C/06_Build_Systems",
     "DesignPatterns/03_Advanced",
