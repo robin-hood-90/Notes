@@ -261,18 +261,18 @@ if (isDevMode()) {
 
 ## Code Scaffolding Reference
 
-| Schematic | Command | Creates |
-|-----------|---------|---------|
-| Component | `ng g c path/name` | `.component.ts`, `.html`, `.scss`, `.spec.ts` |
-| Service | `ng g s path/name` | `.service.ts`, `.spec.ts` |
-| Pipe | `ng g p path/name` | `.pipe.ts`, `.spec.ts` |
-| Directive | `ng g d path/name` | `.directive.ts`, `.spec.ts` |
-| Guard | `ng g g path/name` | `.guard.ts`, `.spec.ts` |
-| Interceptor | `ng g interceptor path/name` | `.interceptor.ts` |
-| Module | `ng g m path/name` | `.module.ts` |
-| Class | `ng g cl path/name` | `.class.ts` |
-| Interface | `ng g i path/name` | `.interface.ts` |
-| Enum | `ng g e path/name` | `.enum.ts` |
+| Schematic | Command | Definition | Creates |
+|-----------|---------|------------|---------|
+| **Component** | `ng g c path/name` | UI building block with template, styles, and logic controlled by a class | `.component.ts`, `.html`, `.scss`, `.spec.ts` |
+| **Service** | `ng g s path/name` | Singleton class for business logic, data access, or shared state | `.service.ts`, `.spec.ts` |
+| **Pipe** | `ng g p path/name` | Transforms template values in expressions (`{{ val \| myPipe }}`) | `.pipe.ts`, `.spec.ts` |
+| **Directive** | `ng g d path/name` | Adds behavior to existing DOM elements via attribute selectors | `.directive.ts`, `.spec.ts` |
+| **Guard** | `ng g g path/name` | Controls route activation/deactivation (`canActivate`, `canDeactivate`) | `.guard.ts`, `.spec.ts` |
+| **Interceptor** | `ng g interceptor path/name` | Intercepts HTTP requests/responses for auth tokens, logging, caching | `.interceptor.ts` |
+| **Module** | `ng g m path/name` | Container grouping related components, services, pipes (NgModule — pre-standalone) | `.module.ts` |
+| **Class** | `ng g cl path/name` | Plain TypeScript class (no Angular-specific decorator) | `.class.ts` |
+| **Interface** | `ng g i path/name` | TypeScript interface for type contracts and shapes | `.interface.ts` |
+| **Enum** | `ng g e path/name` | TypeScript enum for named constant values | `.enum.ts` |
 
 ### Common flags
 
