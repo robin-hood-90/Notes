@@ -12,7 +12,7 @@ updated: 2026-05-09
 
 ## Table of Contents
 
-1. [What Are Design Patterns?](#what-are-design-patterns)
+1. [What Are Design Patterns?](#what Are Design Patterns)
 2. [GoF Classification](#gof-classification)
 3. [Pattern Anatomy](#pattern-anatomy)
 4. [When to Use Patterns](#when-to-use-patterns)
@@ -27,7 +27,7 @@ A **design pattern** is a reusable, proven solution to a recurring problem in so
 > [!info] Design Pattern
 > A general, reusable solution to a commonly occurring problem within a given context in software design. A pattern is not a finished design that can be directly translated to code — it is a description or template for how to solve a problem. Patterns capture proven experience and provide a shared vocabulary for developers to communicate design decisions at a higher level of abstraction.
 
-\`\`\`mermaid
+```mermaid
 flowchart TD
     A["Encounter a recurring design problem"] --> B["Identify the pattern context"]
     B --> C["Apply the pattern solution"]

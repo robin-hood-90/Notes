@@ -959,7 +959,6 @@ GROUP BY c.id, c.name
 HAVING COUNT(*) > 5;
 ```
 
-```
 
 ---
 

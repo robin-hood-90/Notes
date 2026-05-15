@@ -1,0 +1,195 @@
+{
+  "main": {
+    "id": "33c080e414831abe",
+    "type": "split",
+    "children": [
+      {
+        "id": "dd5b16846d75de2b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c44e377057d3988e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "SQL/03_Advanced/05_PL_pgSQL_Functions_and_Procedures.md",
+                "mode": "preview",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "05_PL_pgSQL_Functions_and_Procedures"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7a057b77eaec7fac",
+    "type": "mobile-drawer",
+    "children": [
+      {
+        "id": "517aaa0056816a6c",
+        "type": "leaf",
+        "state": {
+          "type": "file-explorer",
+          "state": {
+            "sortOrder": "alphabetical",
+            "autoReveal": false
+          },
+          "icon": "lucide-folder-closed",
+          "title": "Files"
+        }
+      },
+      {
+        "id": "30fb5709e78f181a",
+        "type": "leaf",
+        "state": {
+          "type": "search",
+          "state": {
+            "query": "",
+            "matchingCase": false,
+            "explainSearch": false,
+            "collapseAll": false,
+            "extraContext": false,
+            "sortOrder": "alphabetical"
+          },
+          "icon": "lucide-search",
+          "title": "Search"
+        }
+      },
+      {
+        "id": "3a0311d3e09bee78",
+        "type": "leaf",
+        "state": {
+          "type": "tag",
+          "state": {
+            "sortOrder": "frequency",
+            "useHierarchy": true,
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-tags",
+          "title": "Tags"
+        }
+      },
+      {
+        "id": "d7310fa54808a2f0",
+        "type": "leaf",
+        "state": {
+          "type": "all-properties",
+          "state": {
+            "sortOrder": "frequency",
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-archive",
+          "title": "All properties"
+        }
+      },
+      {
+        "id": "588a7991de582d57",
+        "type": "leaf",
+        "state": {
+          "type": "bookmarks",
+          "state": {},
+          "icon": "lucide-bookmark",
+          "title": "Bookmarks"
+        }
+      }
+    ],
+    "currentTab": 0
+  },
+  "right": {
+    "id": "3b47c06dd524c5b8",
+    "type": "mobile-drawer",
+    "children": [
+      {
+        "id": "e80a615fe493b53c",
+        "type": "leaf",
+        "state": {
+          "type": "backlink",
+          "state": {
+            "file": "SQL/03_Advanced/05_PL_pgSQL_Functions_and_Procedures.md",
+            "collapseAll": false,
+            "extraContext": false,
+            "sortOrder": "alphabetical",
+            "showSearch": false,
+            "searchQuery": "",
+            "backlinkCollapsed": false,
+            "unlinkedCollapsed": true
+          },
+          "icon": "links-coming-in",
+          "title": "Backlinks"
+        }
+      },
+      {
+        "id": "a878ada16986db7f",
+        "type": "leaf",
+        "state": {
+          "type": "outgoing-link",
+          "state": {
+            "file": "SQL/03_Advanced/05_PL_pgSQL_Functions_and_Procedures.md",
+            "linksCollapsed": false,
+            "unlinkedCollapsed": true
+          },
+          "icon": "links-going-out",
+          "title": "Outgoing links"
+        }
+      },
+      {
+        "id": "8ea03e5d1d3e1d8c",
+        "type": "leaf",
+        "state": {
+          "type": "outline",
+          "state": {
+            "file": "SQL/03_Advanced/05_PL_pgSQL_Functions_and_Procedures.md",
+            "followCursor": false,
+            "showSearch": false,
+            "searchQuery": ""
+          },
+          "icon": "lucide-list",
+          "title": "Outline"
+        }
+      }
+    ],
+    "currentTab": 0
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "c44e377057d3988e",
+  "lastOpenFiles": [
+    "SystemDesign/02_Core/02_Load_Balancers_and_Service_Discovery.md",
+    "Networking/01_Foundations/01_OSI_and_TCP_IP_Model.md",
+    "SQL/03_Advanced/05_PL_pgSQL_Functions_and_Procedures.md",
+    "SQL/02_Core/06_Advanced_DML_Upsert_Merge_Returning.md",
+    "SQL/02_Core/03_Isolation_Levels_and_Anomalies.md",
+    "SQL/02_Core/02_Transactions_and_Locking.md",
+    "SQL/02_Core/01_Indexes_Basics_and_BTree.md",
+    "SQL/01_Foundations/04_Schema_Design_Basics.md",
+    "SQL/01_Foundations/03_Group_By_Having_and_Aggregates.md",
+    "SQL/01_Foundations/02_SQL_Basics_Select_Where_Join.md",
+    "SQL/01_Foundations/01_psql_Basics_and_Workflow.md",
+    "DesignPatterns/02_Core/C05_Composite_and_Decorator.md",
+    "DesignPatterns/01_Foundations/F01_Introduction_to_Design_Patterns.md",
+    "CICD/GitHub/01_Foundations/00_Git_Commands_and_Workflow.md",
+    "SpringBoot/01_Foundations/02_DI_and_Bean_Lifecycle.md",
+    "OpenNote/Templates",
+    "OpenNote/Backup",
+    "OpenNote/Images",
+    "OpenNote",
+    "SpringBoot/01_Foundations/01_Boot_Project_Structure_and_Profiles.md",
+    "TypeScript/02_Core/04_Types_vs_Interfaces.md"
+  ]
+}
