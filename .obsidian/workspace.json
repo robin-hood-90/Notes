@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DSA/Algorithms.md",
+                "file": "DSA/JAVA_IMPL/Java_03_Algorithms_Part1.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Algorithms"
+              "title": "Java_03_Algorithms_Part1"
             }
           }
         ]
@@ -185,8 +185,9 @@
   },
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
-    "HttpErrorCodes.md",
     "DSA/Algorithms.md",
+    "DSA/DataStructures.md",
+    "HttpErrorCodes.md",
     "Angular/02_Core/13_Error_Handling.md",
     "Angular/02_Core/16_Interceptors_Deep_Dive.md",
     "Angular/02_Core/03_RxJS_in_Angular.md",
@@ -194,7 +195,6 @@
     "Angular/02_Core/05_Forms_Template_vs_Reactive.md",
     "Angular/02_Core/06_Pipes_BuiltIn_and_Custom.md",
     "Angular/02_Core/07_Directives_Structural_and_Attribute.md",
-    "DSA/DataStructures.md",
     "Angular/02_Core/17_Modules_and_NgModule_Deep_Dive.md",
     "Angular/02_Core/15_Route_Guards_Deep_Dive.md",
     "1-arrays.md",
