@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "DSA/JAVA_IMPL/Java_03_Algorithms_Part1.md",
-                "mode": "source",
+                "file": "DSA/Algorithms.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Java_03_Algorithms_Part1"
+              "title": "Algorithms"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 446.5
+    "width": 436.5
   },
   "right": {
     "id": "e76af3300c6063a1",
@@ -185,9 +185,13 @@
   },
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
-    "DSA/Algorithms.md",
     "DSA/DataStructures.md",
     "HttpErrorCodes.md",
+    "SystemDesign/01_Foundations/02_Throughput_Latency_and_SLOs.md",
+    "SystemDesign/01_Foundations/01_Requirements_and_Capacity_Estimation.md",
+    "DSA/JAVA_IMPL/Java_00_Index_and_CheatSheet.md",
+    "DSA/Algorithms.md",
+    "DSA/JAVA_IMPL/Java_03_Algorithms_Part1.md",
     "Angular/02_Core/13_Error_Handling.md",
     "Angular/02_Core/16_Interceptors_Deep_Dive.md",
     "Angular/02_Core/03_RxJS_in_Angular.md",
@@ -208,10 +212,6 @@
     "CICD/Kubernetes/01_Foundations/02_Labels_Selectors_and_Namespaces.md",
     "CICD/Kubernetes/01_Foundations/01_Core_Objects_Pods_Deployments_Services.md",
     "Java/03_Advanced/02_JMM_Volatile_and_Locks.md",
-    "CICD/Kubernetes/03_Advanced/08_Audit_Logging_and_Multi_Cluster.md",
-    "CICD/Kubernetes/02_Core/09_VPA_PriorityClass_kubeconfig_Descheduler.md",
-    "CICD/Kubernetes/03_Advanced/07_Service_Mesh_and_Gateway_API.md",
-    "CICD/Kubernetes/02_Core/08_PDB_ClusterAutoscaler_AdmissionControllers.md",
     "C++/06_Build_Systems",
     "C/06_Build_Systems",
     "DesignPatterns/03_Advanced",

@@ -2,7 +2,7 @@
 tags: [dsa, data-structures, java]
 aliases: ["DSA Data Structures"]
 status: stable
-updated: 2026-05-01
+updated: 2026-05-27
 ---
 
 # Data Structures - Complete Guide (Beginner to Advanced)
@@ -184,6 +184,25 @@ RangeSum(P[1 .. n], L, R):
         return P[R] - P[L - 1]
 ```
 
+> [!warning] Pitfalls
+> - **Off-by-one in 0-indexed vs 1-indexed** — LeetCode uses 0-indexing; many pseudocode references use 1-indexing. When prefix sums are defined as `P[0]=0, P[i]=P[i-1]+A[i-1]`, sum(L,R) = P[R+1] - P[L] (0-indexed) vs P[R] - P[L-1] (1-indexed). Trace an example.
+> - **Insert/Delete at front is O(n)** — arrays require shifting all elements. Use a LinkedList or Deque for O(1) front operations.
+> - **Multi-dimensional array indexing** — `A[i][j]` in row-major order is at `A + (i * cols + j) * sizeof(T)`. Column-first access destroys cache locality (cache misses on every access). Always iterate rows first, then columns.
+> - **Resizing amortized cost** — dynamic arrays (ArrayList, Vector) double capacity, giving O(1) amortized push. But the worst-case single push is O(n). Don't use dynamic arrays in hard real-time systems without preallocation.
+> - **Passing slices as copies** — in Java, `Arrays.copyOfRange()` creates a new array (O(n)). In Python, `arr[i:j]` also copies. For read-only views, use the original array with bounds.
+
+> [!question]- Q: Why are arrays O(1) for random access?
+> **Answer:** Arrays are stored in contiguous memory. The address of element i is `base_address + i * element_size`. The CPU can compute this address and load the data in a single instruction. No traversal, no pointer chasing — pure arithmetic.
+
+> [!question]- Q: When should I use an array vs a linked list?
+> **Answer:** Use an **array** for random access (indexing), cache-friendly iteration, and fixed-size data. Use a **linked list** for frequent insertions/deletions at arbitrary positions (especially front/middle) when you already have a reference to the node. Arrays dominate for most practical purposes due to cache locality.
+
+> [!question]- Q: What is the difference between a static array and a dynamic array?
+> **Answer:** Static arrays have fixed size allocated at declaration. Dynamic arrays (ArrayList, Vector) grow automatically by allocating a larger array and copying elements when capacity is exceeded. Amortized insertion is O(1), but resize operations are O(n).
+
+> [!question]- Q: How does Kadane's algorithm find the maximum subarray in O(n)?
+> **Answer:** Maintain `currentMax = max(A[i], currentMax + A[i])` and `globalMax = max(globalMax, currentMax)`. At each position, decide whether to extend the previous subarray or start fresh. The intuition: a negative prefix sum can never improve a subarray starting after it.
+
 ### Resources
 
 - [Array Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/array-data-structure/)
@@ -270,51 +289,44 @@ IsPalindrome(S[1 .. n]):
     return true
 ```
 
-#### Reverse String In-Place
-```
-Reverse(S[1 .. n]):
-    left ← 1
-    right ← n
-    while left < right:
-        swap S[left] and S[right]
-        left ← left + 1
-        right ← right - 1
-```
+> [!warning] Pitfalls
+> - **Using adjacency matrix for sparse graphs** — if V = 10^5 and E = 10^5, an adjacency matrix uses O(V²) = 10^10 memory (impossible). Always use adjacency list for sparse graphs.
+> - **Undirected edges stored only in one direction** — for undirected graphs, adding edge (u, v) must update both `adj[u]` and `adj[v]`. Forgetting one direction breaks traversal.
+> - **DFS on deep/recursive graphs** — a chain of 10^5 vertices causes StackOverflowError. Use an explicit Stack or BFS for deep graphs.
+> - **Not tracking visited in undirected graphs** — without a visited set, BFS/DFS cycles infinitely between two nodes. In DFS, always pass a `parent` parameter to avoid revisiting the immediate predecessor.
+> - **In-degree vs out-degree confusion** — in directed graphs, in-degree counts incoming edges, out-degree counts outgoing. Mixing them up breaks topological sort (uses in-degree), SCC algorithms, and degree-based heuristics.
+> - **Graph disconnectedness** — many algorithms (BFS, DFS) only visit the component containing the start vertex. For full coverage, loop over all vertices and run BFS/DFS from each unvisited vertex.
 
-#### Substring Extraction
-```
-Substring(S[1 .. n], start, length):
-    result ← new array of size length
-    for i ← 0 to length - 1:
-        result[i] ← S[start + i]
-    return result
-```
+> [!question]- Q: When should I use an adjacency list vs adjacency matrix?
+> **Answer:** **Adjacency list**: O(V+E) space, best for sparse graphs (E << V²). Fast edge iteration. **Adjacency matrix**: O(V²) space, best for dense graphs (E ≈ V²). O(1) edge existence check. Use list as default; matrix only when E is large or constant-time edge queries matter.
 
-#### Efficient Concatenation Pattern
-```
-// Avoiding O(n^2) concatenation:
-// Build by collecting and joining, or using a mutable builder.
-Join(words[1 .. k]):
-    result ← empty
-    for i ← 1 to k:
-        result ← result + words[i]   // use StringBuilder / buffer
-    return result
-```
+> [!question]- Q: How do I represent a weighted graph?
+> **Answer:** In an adjacency list, store pairs: `adj[u] = [(v1, w1), (v2, w2)]`. In an adjacency matrix, store the weight at `matrix[u][v]` (use 0 or ∞ for no edge). For Dijkstra/Bellman-Ford/Kruskal's, the weight is the edge cost to minimize.
 
-#### Anagram Detection (Frequency Count)
-```
-IsAnagram(S1[1 .. n], S2[1 .. m]):
-    if n ≠ m:
-        return false
-    count[1 .. 26] ← {0}       // for lowercase letters
-    for i ← 1 to n:
-        count[S1[i] - 'a'] ← count[S1[i] - 'a'] + 1
-        count[S2[i] - 'a'] ← count[S2[i] - 'a'] - 1
-    for c ← 1 to 26:
-        if count[c] ≠ 0:
-            return false
-    return true
-```
+> [!question]- Q: What's the difference between a tree and a graph?
+> **Answer:** A tree is a connected, acyclic, undirected graph with exactly V-1 edges. Adding any edge creates a cycle; removing any edge disconnects it. Every tree is a graph; not every graph is a tree.
+
+> [!question]- Q: How do you detect if a graph has a cycle?
+> **Answer:** **Undirected**: DFS with parent tracking — if you visit an already-visited neighbor that is not the parent, there's a cycle. **Directed**: three-color DFS (white/gray/black) — a back edge (gray → gray) indicates a cycle. Or use Kahn's topological sort — if not all nodes are dequeued, there's a cycle.
+
+> [!warning] Pitfalls
+> - **String immutability + repeated concatenation** — `s += "a"` in a loop creates a new string each time (O(n²) total). Use `StringBuilder` (Java) or `''.join()` (Python) for building strings in loops.
+> - **Using `==` instead of `.equals()` in Java** — `str1 == str2` compares references, not content. Two identical strings from different sources (e.g., substring vs literal) will have different references.
+> - **Substring memory leak (Java 6 and earlier)** — `substring()` shared the original string's char array, keeping the large original from being GC'd. Fixed in Java 7+. Still worth knowing for legacy systems.
+> - **Case sensitivity by default** — `"Apple".equals("apple")` is false. Normalize with `.toLowerCase()` or `.equalsIgnoreCase()` unless case matters.
+> - **Regex vs indexOf for single char/string search** — `str.indexOf(ch)` is O(n) and ~10x faster than `str.matches(".*ch.*")` which compiles a regex. Use regex only for pattern matching, never for simple substring checks.
+
+> [!question]- Q: What is the difference between `String`, `StringBuilder`, and `StringBuffer`?
+> **Answer:** **String**: immutable — safe for sharing, keys in maps, thread-safe. **StringBuilder**: mutable, not thread-safe — fastest for single-threaded string building. **StringBuffer**: mutable, thread-safe (synchronized) — slower than StringBuilder; use only when multi-threaded mutation is needed.
+
+> [!question]- Q: How is a string stored in memory?
+> **Answer:** In Java: char array (UTF-16). Java 9+ uses compact strings: `byte[]` with LATIN1 (1 byte/char) or UTF16 (2 bytes/char) encoding based on content, saving ~50% memory for ASCII-heavy strings. Python: flexible string representation, immutable, with interning for small strings.
+
+> [!question]- Q: How do you reverse a string?
+> **Answer:** Java: `new StringBuilder(s).reverse().toString()` (O(n)). In-place: convert to char array, swap from both ends. For words: split, reverse each word and the word list. Constant extra space: reverse the whole string, then reverse each word individually.
+
+> [!question]- Q: What is string interning?
+> **Answer:** Java maintains a pool of unique string literals. `String s = "hello"` uses the interned copy; `new String("hello")` creates a new object. Call `s.intern()` to get the canonical copy. Interning saves memory for repeated strings but adds lookup overhead.
 
 ### Resources
 
@@ -494,6 +506,25 @@ RemoveNthFromEnd(head, n):
     return dummy.next
 ```
 
+> [!warning] Pitfalls
+> - **NullPointerException from uninitialized next** — newly created nodes have `next = null` by default, but forgetting to set it explicitly when linking causes NPEs downstream. Always structure insertion as: `newNode.next = prev.next; prev.next = newNode;`.
+> - **Head deletion without a dummy node** — deleting the first node requires updating the head reference. Using a `dummy` node pointing to head eliminates this special case. Same for insertion at position 0.
+> - **Cycle detection with Floyd's algorithm** — the fast pointer moves `fast = fast.next.next`. If `fast.next` is null before the second dereference, you get NPE. Always check `fast != null && fast.next != null` in the loop condition.
+> - **Forgetting to update both ends in doubly linked lists** — inserting between A and B requires: `newNode.prev = A; newNode.next = B; A.next = newNode; B.prev = newNode;` — 4 pointer updates. Missing any one corrupts the list.
+> - **Using linked lists for cache-heavy workloads** — each node lives in a separate heap allocation (poor locality). Iterating a linked list is ~5-10x slower than iterating an array of the same size due to cache misses. Use arrays unless frequent O(1) mid-list insertions are required.
+
+> [!question]- Q: How do you reverse a linked list in-place?
+> **Answer:** Use three pointers: `prev=null, curr=head`. In a loop: `nextTemp = curr.next; curr.next = prev; prev = curr; curr = nextTemp`. Return `prev` as the new head. O(n) time, O(1) space. This is the most-asked linked list interview question.
+
+> [!question]- Q: What's the difference between singly and doubly linked lists?
+> **Answer:** **Singly**: each node has `next` pointer only. Simpler, less memory. Can only traverse forward. **Doubly**: each node has `next` and `prev` pointers. Supports O(1) deletion given a node reference (not just the predecessor). Used in LRU cache, Deque implementations.
+
+> [!question]- Q: How does Floyd's cycle detection algorithm work?
+> **Answer:** Use fast (2 steps) and slow (1 step) pointers. If they meet, a cycle exists. To find the cycle start: reset slow to head, move both at 1 step until they meet — that's the cycle entry. O(n) time, O(1) space. No hash set needed.
+
+> [!question]- Q: Why use a dummy/sentinel node?
+> **Answer:** It eliminates edge cases for operations at the head of the list. With a dummy node, head insertion, head deletion, and empty-list handling become identical to mid-list operations. Code becomes shorter and less error-prone.
+
 ### Resources
 
 - [Linked List - GeeksforGeeks](https://www.geeksforgeeks.org/data-structures/linked-list/)
@@ -641,6 +672,24 @@ InfixToPostfix(infix[1 .. n]):
         output.append(opStack.pop())
     return output
 ```
+
+> [!warning] Pitfalls
+> - **Popping from an empty stack** — always check `isEmpty()` before pop/peek. Java's `Stack.pop()` throws `EmptyStackException`; Deque's `pop()` throws `NoSuchElementException`.
+> - **Using Stack (legacy) vs Deque** — `java.util.Stack` extends `Vector` and is synchronized (slow). Use `ArrayDeque` or `LinkedList` as a Deque for stack operations: `push()`, `pop()`, `peek()`.
+> - **Recursive stack overflow for large problems** — deep recursion (e.g., DFS on a 10^5-node chain, unbounded tree traversal) exceeds the call stack. Convert to an explicit Stack for iterative DFS tail recursion.
+> - **Forgetting Stack for monotonic stack patterns** — problems like "next greater element," "largest rectangle in histogram," and "daily temperatures" all use a monotonic stack. Recognizing the monotonic pattern is the key to solving them.
+
+> [!question]- Q: What are the key LIFO applications of a stack?
+> **Answer:** (1) Undo/Redo in editors. (2) Back/Forward in browsers. (3) Expression evaluation (infix → postfix, calculator). (4) Parenthesis matching. (5) Function call stack. (6) DFS graph traversal. (7) Monotonic stack (next greater/smaller element).
+
+> [!question]- Q: How does a monotonic stack work?
+> **Answer:** Maintain elements in strictly increasing or decreasing order. When a new element violates the monotonic property, pop elements from the stack until the property is restored. Popped elements are processed ("next greater element found"). Each element is pushed and popped at most once → O(n).
+
+> [!question]- Q: What's the relationship between recursion and stacks?
+> **Answer:** Every recursive function implicitly uses the call stack — each call pushes a stack frame with local variables and return address. Tail recursion can be optimized to avoid stack growth. Explicit stacks convert recursive algorithms (DFS, backtracking) to iterative ones.
+
+> [!question]- Q: How do you implement a stack using queues (or vice versa)?
+> **Answer:** Stack using 2 queues: push → enqueue to q1. pop → dequeue q1 into q2 until last element, dequeue that element, swap q1 and q2. O(n) pop, O(1) push. Can be made O(1) amortized with a single queue where push rotates the queue.
 
 ### Resources
 
@@ -797,6 +846,25 @@ StackUsingQueues:
         return q1.peek()
 ```
 
+> [!warning] Pitfalls
+> - **Confusing Queue (FIFO) with Stack (LIFO)** — Queue: first in, first out (like a line). Stack: last in, first out (like a stack of plates). Mismatching them causes completely wrong algorithm behavior.
+> - **Using LinkedList as Queue** — `LinkedList` implements `Queue` but `add()`/`remove()` throw exceptions on failure, while `offer()`/`poll()` return false/null. Use the latter for non-exceptional control flow.
+> - **BFS with wrong data structure** — BFS requires a queue (FIFO) for level-order traversal. Using a stack (DFS) changes semantics and produces depth-first order.
+> - **Circular queue index wrapping** — `rear = (rear + 1) % capacity`. Forgetting the modulo causes index out of bounds. Also, tracking `size` separately avoids ambiguity between full and empty states (when front == rear).
+> - **Deque operations on the wrong end** — `addFirst()` vs `addLast()`, `pollFirst()` vs `pollLast()`. Using the wrong end effectively reverses queue behavior. Read the method name carefully.
+
+> [!question]- Q: What's the difference between Queue, Deque, and PriorityQueue?
+> **Answer:** **Queue** = FIFO (first in, first out). **Deque** = double-ended (can add/remove from both ends) — can act as both stack and queue. **PriorityQueue** = elements ordered by priority (min or max) regardless of insertion order. Each serves a different use case.
+
+> [!question]- Q: When is a circular queue needed?
+> **Answer:** When you have a fixed-size buffer and want to reuse slots. Examples: keyboard buffer, network packet buffer, audio processing, message queues. Circular queues avoid shifting elements (which O(n) arrays require) by wrapping the write pointer around.
+
+> [!question]- Q: How do you implement a queue using two stacks?
+> **Answer:** Push stack (for enqueue) + Pop stack (for dequeue). Enqueue: push to Push stack. Dequeue: if Pop stack is empty, pop all from Push stack and push to Pop stack (reversing order), then pop from Pop stack. Amortized O(1) per operation.
+
+> [!question]- Q: What are practical applications of Deques?
+> **Answer:** Sliding window maximum (monotonic deque), palindrome checking (compare from both ends), undo/redo with history limits, work-stealing in parallel computing (deque per thread), and LRU cache (remove oldest from one end, promote to other).
+
 ### Resources
 
 - [Queue Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/queue-data-structure/)
@@ -807,6 +875,22 @@ StackUsingQueues:
 ## 6. Hash Tables
 
 ### Overview
+
+> [!tip] Intuition
+> Imagine a library where every book has a unique call number. To find a book, you don't scan every shelf — you compute the call number's position and go directly there. A hash table does the same: feed a key into a hash function, get back an array index, and retrieve the value in O(1). The challenge (and the art) is handling **collisions** — when two keys hash to the same slot.
+
+```mermaid
+flowchart TD
+    subgraph HashOps["Hash Table Operations"]
+        H1["Insert: key='cat', hash(cat)=5 → store at index 5"]
+        H2["Lookup: key='cat', hash(cat)=5 → found at index 5"]
+        H3["Delete: key='cat', hash(cat)=5 → mark as deleted/tombstone"]
+    end
+    subgraph Collision["Collision: Separate Chaining"]
+        C1["Index 2: 'dog' → 'cat' (same hash) → 'bird'"] --> C2["Each bucket is a linked list"]
+        C2 --> C3["Insert: append to list. Lookup: traverse list."]
+    end
+```
 
 A hash table maps keys to values using a hash function. Provides average O(1) lookup, insertion, and deletion.
 
@@ -936,6 +1020,26 @@ SlideHash(oldHash, leftChar, rightChar, a, aPow_n, m):
     newHash ← (newHash * a + rightChar) mod m
     return newHash
 ```
+
+> [!warning] Pitfalls
+> - **Using mutable objects as keys** — if a key's hash changes after insertion, the value becomes unfindable (it's in the wrong bucket). Always use immutable objects (String, Integer) as keys.
+> - **Poor hash function causing clustering** — a hash function that maps everything to the same bucket degrades O(1) to O(n). Use a well-distributed hash (e.g., `Objects.hash()` in Java, or multiply by a large prime).
+> - **Load factor too high** — when the load factor exceeds ~0.75, collision chains grow and performance degrades. Rehash (resize to ~2x capacity) before it gets bad.
+> - **Modifying a collection while iterating** — removing entries via `map.keySet().remove()` during iteration may cause `ConcurrentModificationException`. Use `Iterator.remove()` or collect keys first, then remove.
+> - **Integer overflow in rolling hash** — when computing hash codes modulo m, intermediate products like `hash * 31 + c` can overflow 32-bit int. Java's `String.hashCode()` intentionally allows overflow (wrap-around); if you need collision control, use a large prime modulo.
+> - **Assuming HashMap iteration order** — `HashMap` does not guarantee insertion order. Use `LinkedHashMap` (insertion order) or `TreeMap` (sorted order) when order matters.
+
+> [!question]- Q: How does a hash function work?
+> **Answer:** It maps a key to an integer array index. A good hash function: (1) is deterministic (same key → same index), (2) distributes uniformly, (3) is fast to compute. Common approach: `hash(key) % array_size`, where `hash(key)` is the key's hashCode blended with bit shifts and prime multiplication.
+
+> [!question]- Q: What's the difference between separate chaining and open addressing?
+> **Answer:** **Separate chaining**: each bucket holds a linked list (or BST) of collided entries. Simpler, handles high load factors well. **Open addressing**: when a slot is taken, probe for the next empty slot (linear probing, quadratic probing, double hashing). Better cache locality but degrades badly at high load factors.
+
+> [!question]- Q: Why is load factor 0.75 the default in Java's HashMap?
+> **Answer:** It balances time and space. Below 0.75: sparse array, good performance but wastes memory. Above 0.75: collision probability increases rapidly. At 0.75, expected probes for open addressing ≈ 2.5; for separate chaining, average chain length ≈ 0.75. The default hits a sweet spot.
+
+> [!question]- Q: How does rehashing work?
+> **Answer:** When the load factor exceeds the threshold, create a new array (typically 2x size), then re-insert every entry: compute `hash(key) % new_size` for each key-value pair. Rehashing is O(n) but amortized over all insertions, it's O(1) per insert.
 
 ### Resources
 
@@ -1471,6 +1575,25 @@ BuildHelper(pre, preStart, preEnd, in, inStart, inEnd, map):
 - Vertical order traversal
 - Boundary traversal
 
+> [!warning] Pitfalls
+> - **BST validation without tracking min/max range** — checking only `left.val < root.val < right.val` is insufficient. A node deep in the right subtree could violate the global BST property (e.g., 10 → right→5 → left→15). Pass `min` and `max` bounds down the recursion.
+> - **Forgetting to handle null in recursive tree functions** — most tree operations start with `if (root == null) return`. Without this, every recursive call eventually NullPointerExceptions.
+> - **Tree height vs depth confusion** — depth = distance from root (root has depth 0). Height = longest path to a leaf (leaf has height 0 or 1 depending on convention). Mixing them up breaks balanced-tree checks.
+> - **Recursive tree serialization stack overflow** — deep skewed trees (10^5 nodes) overflow the call stack. Use iterative traversal (stack-based) for serialization and deserialization.
+> - **In-place tree modification without proper parent tracking** — BST deletion requires tracking or updating the parent pointer. Without it, you can't unlink the deleted node. Using a dummy or returning the new root from recursion solves this.
+
+> [!question]- Q: When is a tree balanced and why does it matter?
+> **Answer:** A balanced tree has height O(log n). Unbalanced (skewed) trees degenerate to linked lists (height = n). BST operations (search, insert, delete) are O(height), so balanced = O(log n) vs unbalanced = O(n). Self-balancing trees (AVL, Red-Black) enforce balance automatically.
+
+> [!question]- Q: What is the difference between BFS and DFS in trees?
+> **Answer:** **BFS** (level-order): processes level by level, uses a queue. Good for shortest path in unweighted trees, level-order printing, connected components. **DFS** (pre/in/post-order): goes deep first, uses recursion or stack. Good for serialization, expression trees, topological ordering on DAGs.
+
+> [!question]- Q: How does LCA (Lowest Common Ancestor) work?
+> **Answer:** For a binary tree: recursively search left and right. If both return non-null, current node is LCA. If only one returns non-null, that's the LCA (both nodes in that subtree). O(n). For BST: exploit BST property — if both nodes are less than root, go left; both greater, go right; otherwise root is LCA. O(log n).
+
+> [!question]- Q: What's the difference between AVL and Red-Black trees?
+> **Answer:** **AVL**: stricter balance (height difference ≤ 1). Faster lookups (more balanced), but more rotations on insert/delete. **Red-Black**: looser balance (longest path ≤ 2× shortest). Fewer rotations, faster insert/delete. Java's TreeMap uses Red-Black; databases often prefer AVL or B-Trees.
+
 ### Resources
 
 - [Tree Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/binary-tree-data-structure/)
@@ -1646,6 +1769,25 @@ FindMedian():
     return (maxHeap.top() + minHeap.top()) / 2
 ```
 
+> [!warning] Pitfalls
+> - **Using max-heap where min-heap is needed** — Java's `PriorityQueue` is a min-heap by default (smallest element at top). Use `new PriorityQueue<>(Collections.reverseOrder())` for max-heap. Python's `heapq` is always min-heap; negate values for max-heap.
+> - **Heapify in O(n) vs building by repeated insert** — inserting n elements one-by-one is O(n log n). Heapify (bottom-up siftDown starting from n/2) is O(n). Use heapify when you have all elements upfront.
+> - **0-indexed vs 1-indexed array representation** — in 0-indexed, children of i are at `2i+1` and `2i+2`, parent is `(i-1)/2`. In 1-indexed, children at `2i` and `2i+1`, parent at `i/2`. Off-by-one errors are common.
+> - **Heap sort instability** — heap sort is not stable (equal elements may be reordered). For stable sorting, use merge sort or TimSort.
+> - **Find median with two heaps** — the invariant: maxHeap size = minHeap size OR maxHeap size = minHeap size + 1. After every insertion, rebalance. Forgetting to rebalance gives incorrect medians.
+
+> [!question]- Q: How do you find the Kth largest element using a heap?
+> **Answer:** **Min-heap of size K**: iterate through the array, add each element to a min-heap. If heap size > K, pop the smallest. After processing, the top of the min-heap is the Kth largest. O(n log k) time, O(k) space. Alternatively, QuickSelect in O(n) average.
+
+> [!question]- Q: What is heapify and why is it O(n)?
+> **Answer:** Heapify builds a heap from an unsorted array by calling siftDown on all non-leaf nodes (indices n/2 down to 1). The cost at each level: O(1) for leaves (height 0), O(h) for height h. Summing: Σ(h * n/2^{h+1}) = O(n). Intuition: most nodes are near the bottom and cost very little.
+
+> [!question]- Q: How do you merge K sorted lists using a heap?
+> **Answer:** Push the head of each list into a min-heap with (value, listIndex, elementIndex). Repeatedly pop the minimum, add it to the result, and push the next element from the same list. O(N log K) where N = total elements, K = number of lists.
+
+> [!question]- Q: What's the difference between a heap and a sorted array?
+> **Answer:** A heap guarantees the root is the min/max, but the rest is not sorted — it's a partial order. Finding the minimum is O(1); finding the kth smallest (without popping) is not supported. A sorted array supports both min and kth smallest in O(1), but insertion is O(n) vs O(log n) for heap.
+
 ### Resources
 
 - [Heap Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/heap-data-structure/)
@@ -1663,6 +1805,27 @@ FindMedian():
 
 > [!tip] Java implementation reference
 > ![[JAVA_IMPL/Java_02_Advanced_DS#Section G: Graph Representations]]
+
+> [!tip] Intuition
+> A graph represents **relationships**: cities connected by roads, people connected by friendships, web pages linked by hyperlinks. The choice of representation — adjacency list vs matrix — depends on whether the graph is sparse (few edges) or dense (many edges). Think of an adjacency list as a "who knows whom" directory for each vertex; an adjacency matrix is a "yes/no" table for every possible pair.
+
+```mermaid
+flowchart TD
+    subgraph AL["Adjacency List (Sparse)"]
+        A1["0 → [1, 2]"] --- A2["1 → [0, 3]"]
+        A2 --- A3["2 → [0, 3]"] --- A4["3 → [1, 2]"]
+    end
+    subgraph AM["Adjacency Matrix (Dense)"]
+        M1["   0 1 2 3<br/>0: 0 1 1 0<br/>1: 1 0 0 1<br/>2: 1 0 0 1<br/>3: 0 1 1 0"]
+    end
+    subgraph Terms["Key Terms"]
+        T1["Degree = # of edges from a vertex"]
+        T2["Path = sequence of edges"]
+        T3["Cycle = path starting and ending at same vertex"]
+        T4["Connected = path exists between every pair"]
+        T5["DAG = Directed Acyclic Graph (no directed cycles)"]
+    end
+```
 
 ### Overview
 
@@ -1905,6 +2068,28 @@ IsBipartite(G):
 
 ### Overview
 
+> [!tip] Intuition
+> When you type "app" in your phone's search bar and it suggests "apple," "application," and "appetizer," a trie is behind the scenes. Each node stores one character, and words are paths from root to a marked "end-of-word" node. Finding all words with a given prefix is O(prefix length) — you just walk down that path and collect all descendants. No hash table can match this prefix-search speed.
+
+```mermaid
+flowchart TD
+    subgraph Trie["Trie containing 'app', 'apple', 'api', 'bat'"]
+        T0["root"] --> T1["'a'"]
+        T0 --> T2["'b'"]
+        T1 --> T3["'p'"]
+        T3 --> T4["'p' ★ (end: app)"]
+        T4 --> T5["'l'"]
+        T5 --> T6["'e' ★ (end: apple)"]
+        T3 --> T7["'i' ★ (end: api)"]
+        T2 --> T8["'a'"]
+        T8 --> T9["'t' ★ (end: bat)"]
+    end
+    style T4 fill:#f9a,stroke:#a05
+    style T6 fill:#f9a,stroke:#a05
+    style T7 fill:#f9a,stroke:#a05
+    style T9 fill:#f9a,stroke:#a05
+```
+
 A trie is a tree-like data structure used to store strings, where each node represents a character. Useful for prefix-based operations.
 
 ### Types
@@ -2037,6 +2222,25 @@ FindMaxXorPart(root, x):
     return result
 ```
 
+> [!warning] Pitfalls
+> - **Memory blowup with full alphabet arrays** — a naive trie with `children[26]` per node for the full lowercase alphabet wastes ~26 * 8 * N bytes for an N-node trie. Use `HashMap<Character, Node>` or compressed trie (Radix tree) for sparse alphabets.
+> - **Forgetting to mark end-of-word** — without an `isEnd` flag, `search("app")` returns true for "apple" if "app" is a prefix but not a stored word. Always check `isEnd` in `search()`, not just in `startsWith()`.
+> - **Case sensitivity** — a trie storing "Apple" won't match "apple" unless you normalize (e.g., lowercase all strings before insertion and search).
+> - **Deleted nodes in compressed tries** — in a Radix/Patricia trie, deleting a word may require merging nodes or handling shared prefixes carefully. Standard tries just unset `isEnd`.
+> - **Stack overflow in recursive trie operations** — deeply nested tries (e.g., storing URLs or long strings) can exceed recursion limits. Use iterative traversal for production implementations.
+
+> [!question]- Q: What's the difference between a Trie and a Hash Set for storing strings?
+> **Answer:** A Hash Set gives O(1) lookup for exact matches; a Trie gives O(L) lookup but also supports **prefix queries** (startsWith, autocomplete), longest prefix match, and lexicographic ordering of stored strings — none of which a Hash Set can do efficiently.
+
+> [!question]- Q: How is a Trie used for autocomplete?
+> **Answer:** After navigating to the node corresponding to the typed prefix, perform DFS/BFS from that node to collect all descendant nodes marked `isEnd`. Return those words. With frequency counts at nodes, you can also return the top-K most frequent completions.
+
+> [!question]- Q: What's a compressed trie (Radix Tree)?
+> **Answer:** Nodes with only one child are merged with their parent, storing substrings instead of single characters. For example, the path "app" → "le" becomes one node labeled "apple" if no branching occurs. This drastically reduces node count for sparse keys.
+
+> [!question]- Q: How is a Trie used for Maximum XOR problems?
+> **Answer:** Build a binary trie (each node has children 0 and 1). For each number, to find the maximum XOR with any previously inserted number, traverse the trie taking the opposite bit (1 if current bit is 0) at each level. O(32) per query.
+
 ### Resources
 
 - [Trie Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/trie-insert-and-search/)
@@ -2050,6 +2254,9 @@ FindMaxXorPart(root, x):
 > ![[JAVA_IMPL/Java_02_Advanced_DS#H.1 Union-Find (DSU)]]
 
 ### Overview
+
+> [!tip] Intuition
+> Imagine a social network where each person points to a "group leader." When two people become friends, their groups merge — the smaller group's leader now points to the larger group's leader. To find who leads a person, you follow the chain upward, compressing the path along the way so future lookups are instant. That's Union-Find: **disjoint sets, near-constant operations, no tree rotations, no rebalancing — just parent pointers and clever path compression.**
 
 ```mermaid
 flowchart LR
@@ -2115,6 +2322,25 @@ UnionBySize(x, y):
 - Number of islands (union-find approach)
 - Satisfiability of equality equations
 - Smallest string with swaps
+
+> [!warning] Pitfalls
+> - **Forgetting path compression** — without `parent[x] = Find(parent[x])`, the tree degenerates to a linked list, making Find O(n). Always compress in Find.
+> - **Union without rank/size** — naive union (always attach rootY to rootX) can create deep trees. Always use union by rank or union by size to keep depth O(α(n)).
+> - **Using Union-Find for directed graphs** — DSU only models undirected connectivity. For directed graphs, use DFS or Tarjan's SCC algorithm.
+> - **Rank vs size confusion** — union by rank tracks tree depth; union by size tracks number of elements. Both give O(α(n)), but size is more intuitive for problems like "size of connected component."
+> - **Not resetting DSU for multiple test cases** — in competitive programming, reinitialize parent and rank arrays for each test case. Reusing stale parents produces wrong results.
+
+> [!question]- Q: Why is Union-Find effectively O(1) despite being O(α(n))?
+> **Answer:** The inverse Ackermann function α(n) grows so slowly that α(n) ≤ 5 for any practical input size (n < 2^65536). In practice, Union-Find with path compression + union by rank is effectively constant time per operation.
+
+> [!question]- Q: When should I use Union-Find vs DFS for connected components?
+> **Answer:** Use **Union-Find** when you need to process edges dynamically (online queries, edges added over time). Use **DFS/BFS** for static graphs (all edges known upfront). Union-Find is also better when you only need connectivity queries (no traversal info).
+
+> [!question]- Q: How does Kruskal's MST use Union-Find?
+> **Answer:** Kruskal's processes edges by weight. For each edge (u, v), if Find(u) ≠ Find(v), they're in different components — add the edge and Union(u, v). If Find(u) = Find(v), adding this edge would create a cycle — skip it. Union-Find is the cycle-detection engine of Kruskal's.
+
+> [!question]- Q: What's path compression and why does it matter?
+> **Answer:** During Find(x), every node on the path from x to the root has its parent pointer reset directly to the root. This flattens the tree over time. Without it, the tree can become deep (O(n)). With both path compression and union by rank, amortized time is O(α(n)).
 
 ### Resources
 
@@ -2251,6 +2477,25 @@ RangeUpdate(node, start, end, L, R, val):
 - Distinct values queries
 - Interval scheduling
 
+> [!warning] Pitfalls
+> - **0-indexed vs 1-indexed children** — in 1-indexed segment tree, children of node i are at 2i and 2i+1. In 0-indexed, they're at 2i+1 and 2i+2. Consistent indexing is critical; the entire tree breaks with an off-by-one.
+> - **Array size for segment tree** — worst-case size is 4*n (not 2*n). For power-of-2 n, 2*n is enough, but for arbitrary n, allocate 4*n to be safe. Using 2*n may cause index out of bounds.
+> - **Lazy propagation without clearing** — after applying a lazy update, you must push the lazy value to children AND reset the parent's lazy to 0/identity. Forgetting the reset double-counts updates.
+> - **Range update without propagation during query** — when querying a range, you must propagate lazy values downwards before accessing child nodes. Skipping propagation returns stale values.
+> - **Merge function not associative** — segment tree operations (sum, min, max) must be associative. For non-associative operations (e.g., matrix multiplication on segments), verify that the order of combination is correct.
+
+> [!question]- Q: When should I use a Segment Tree vs a Fenwick Tree?
+> **Answer:** **Segment Tree**: supports any associative operation (sum, min, max, GCD, matrix mult), range updates with lazy propagation. More flexible, more code. **Fenwick Tree (BIT)**: supports only invertible operations (sum, XOR), simpler code, lower constant, less memory. For range sum with point updates, BIT is preferred.
+
+> [!question]- Q: How does lazy propagation work?
+> **Answer:** Instead of updating every leaf in a range update, store pending updates at internal nodes (lazy array). When a node is accessed later (by query or update), "push" the lazy value to its children and clear its own lazy. This defers work until it's actually needed, giving O(log n) range updates.
+
+> [!question]- Q: Why does a segment tree need 4*n space?
+> **Answer:** In the worst case, a segment tree built for an arbitrary n may need nodes at index 2^(ceil(log₂ n) + 1) - 1. For n not a power of 2, the last level can be sparse, requiring up to 4*n - 1 indices. Using 4*n guarantees no index overflow.
+
+> [!question]- Q: What operations can a segment tree support?
+> **Answer:** Any associative operation: sum, minimum, maximum, GCD, LCM, bitwise AND/OR/XOR, matrix multiplication, convolution. With lazy propagation: range addition, range assignment. Persistence variants support historical queries.
+
 ### Resources
 
 - [Segment Tree - CP-Algorithms](https://cp-algorithms.com/data_structures/segment_tree.html)
@@ -2352,13 +2597,29 @@ GetValue(i):
 - **2D BIT** — for 2D prefix sums and updates
 - **Range Update + Point Query** — using difference array technique with BIT
 - **Range Update + Range Query** — using two BITs
-
-### Common Patterns
-
 - Count inversions
 - Range sum queries with updates
 - Count of smaller numbers after self
 - Coordinate compression + BIT
+
+> [!warning] Pitfalls
+> - **1-indexed requirement** — BIT's internal array uses 1-based indexing (i += i & -i). Feeding it a 0-based index breaks the update loop. Always add 1 when converting from 0-based input indices.
+> - **BIT vs Segment Tree for non-invertible operations** — BIT works for sum, XOR (invertible) but NOT for min/max/GCD (non-invertible). You can't "remove" an element's contribution from a min. For those, use a Segment Tree.
+> - **Update function direction** — `update(i, delta)`: `while (i <= n) { tree[i] += delta; i += i & -i; }`. `query(i)`: `while (i > 0) { sum += tree[i]; i -= i & -i; }`. Getting these loops backwards (i-- instead of i-=lsb) corrupts results.
+> - **Coordinate compression for large values** — BIT requires indices in [1, n]. If values range from -10^9 to 10^9, compress them to ranks 1..n first using sorting + binary search.
+> - **Range update with BIT** — for range add + point query, use a difference array BIT: `update(L, val); update(R+1, -val)`. For range add + range query, use two BITs. The formulas are non-obvious; double-check the math.
+
+> [!question]- Q: How does `i & -i` isolate the lowest set bit?
+> **Answer:** In two's complement, -i flips all bits and adds 1: `i & -i = i & (~i + 1)`. For i=12 (1100₂), ~i+1=0100₂. 1100 & 0100 = 0100 = 4 (the lowest set bit). This LSB determines how many elements the BIT node covers.
+
+> [!question]- Q: How does BIT achieve O(log n) for prefix sum queries?
+> **Answer:** Each node i stores the sum of the range `[i - LSB(i) + 1, i]`. A prefix query sums at most log n nodes: repeatedly strip the LSB (i -= i & -i) until reaching 0. Each step skips a power-of-2-sized segment.
+
+> [!question]- Q: What is coordinate compression and why is it needed with BIT?
+> **Answer:** BIT requires array indices in [1, max_val]. If values are sparse (e.g., {1000, 5000, 9999}), a BIT of size 10000 wastes space. Compress: sort unique values, assign rank 1..n. Each original value is replaced by its rank. BIT size becomes O(n).
+
+> [!question]- Q: How do you count inversions with a BIT?
+> **Answer:** Process the array from right to left. For each element, query the BIT for the count of elements smaller than it (already seen from the right). Then update the BIT at that value's position. Total inversions = sum of queries. O(n log n) with coordinate compression.
 
 ### Resources
 
@@ -2370,6 +2631,23 @@ GetValue(i):
 ## 14. Suffix Arrays and Suffix Trees
 
 ### Overview
+
+> [!tip] Intuition
+> Every suffix of "banana" is one of "banana," "anana," "nana," ..., "a." A **Suffix Array** sorts these alphabetically and stores their starting indices: [5(a), 3(ana), 1(anana), 0(banana), 4(na), 2(nana)]. Once sorted, you can **binary search** for any substring in O(m log n). A **Suffix Tree** compresses all suffixes into a compact trie — same power, more memory.
+
+```mermaid
+flowchart TD
+    subgraph SA["Suffix Array for 'banana'"]
+        SA0["Suffixes:<br/>0: banana<br/>1: anana<br/>2: nana<br/>3: ana<br/>4: na<br/>5: a"]
+        SA0 --> SA1["Sorted alphabetically:<br/>5: a<br/>3: ana<br/>1: anana<br/>0: banana<br/>4: na<br/>2: nana"]
+        SA1 --> SA2["Suffix Array SA = [5, 3, 1, 0, 4, 2]"]
+    end
+    subgraph ST["Suffix Tree for 'banana$'"]
+        ST1["root → 'a' → '$' (suffix 5), 'na' → '$' (3), 'na$' (1)"]
+        ST2["root → 'banana$' (0)"]
+        ST3["root → 'na' → '$' (4), 'na$' (2)"]
+    end
+```
 
 **Suffix Array**: A sorted array of all suffixes of a string, represented by their starting indices.
 
@@ -2466,6 +2744,25 @@ FindPattern(S, sa[1 .. n], P[1 .. m]):
     return sa[left .. right]
 ```
 
+> [!warning] Pitfalls
+> - **Suffix Array vs Suffix Automaton confusion** — Suffix Array handles pattern matching in O(m log n). Suffix Automaton handles it in O(m). For persistent queries where construction cost is amortized, Suffix Automaton may be faster. Know which you're implementing.
+> - **Building LCP without sentinel** — Kasai's algorithm for LCP array requires a special sentinel character (e.g., '$') smaller than all alphabet characters. Without it, LCP values may be incorrect.
+> - **O(n log n) vs O(n) construction** — the prefix-doubling SA construction is O(n log n) and sufficient for most problems (n ≤ 2·10^5). SA-IS / DC3 are O(n) but have heavy constants and implementation complexity. Use the simpler method unless n > 10^6.
+> - **LCP for binary search** — when binary searching for a pattern in the suffix array, compare character by character from the suffix start. Without LCP, each comparison takes O(m). With LCP, you can skip already-matched characters for O(m + log n) total.
+> - **Suffix Tree memory** — a suffix tree node count is O(n), but each node stores edge labels (start/end indices), children pointers, and suffix links → easily 40+ bytes per node. For n=10^6, this is 40MB+. Suffix Arrays use 4-8 bytes per index.
+
+> [!question]- Q: What can a Suffix Array do that a Trie cannot?
+> **Answer:** A Suffix Array enables **substring search** (not just prefix search) in O(m log n), **longest repeated substring**, **longest common substring** of two strings, and **distinct substring count** — all in O(n log n) preprocessing. A Trie only handles prefixes.
+
+> [!question]- Q: How do you find the longest repeated substring using a Suffix Array?
+> **Answer:** Build the Suffix Array and LCP array. The maximum value in the LCP array corresponds to the length of the longest repeated substring. Its position identifies the starting indices of the two occurrences.
+
+> [!question]- Q: What's the difference between Suffix Array + LCP and Suffix Tree?
+> **Answer:** Suffix Tree supports all Suffix Array operations in linear time but uses much more memory (heavy pointer structures). Suffix Array + LCP array supports the same queries in O(log n) or O(m + log n) with far less memory. Competitive programming favors Suffix Array; bioinformatics sometimes uses Suffix Trees.
+
+> [!question]- Q: How do you find the longest common substring of two strings A and B?
+> **Answer:** Concatenate `A + '#' + B + '$'`, build the SA and LCP arrays. Scan the LCP array for the maximum LCP value where the two suffixes belong to different strings (one from A, one from B). The maximum such LCP is the answer.
+
 ### Resources
 
 - [Suffix Array - CP-Algorithms](https://cp-algorithms.com/string/suffix-array.html)
@@ -2528,6 +2825,25 @@ Query(element):
             return false         // definitely not present
     return true                  // possibly present
 ```
+
+> [!warning] Pitfalls
+> - **False positive rate grows with load** — as more elements are inserted, the fraction of set bits increases. Beyond ~70% fill, FPR skyrockets. Size your filter appropriately upfront.
+> - **No deletion support** — standard Bloom filters cannot remove elements (clearing a bit might affect other elements). Use Counting Bloom Filters if deletion is needed.
+> - **Optimal k depends on m and n** — k = (m/n) * ln(2) ≈ 0.693 * (m/n). Too few hash functions → too many collisions. Too many → fills the array too fast, increasing FPR.
+> - **Hash independence assumption** — theoretical FPR assumes hash functions are independent. In practice, using double hashing with two base hashes (`h1 + i*h2`) is sufficient and simpler than k independent hash functions.
+> - **Not for small datasets** — for n < 10,000, a HashSet or boolean array is simpler, exact, and uses comparable memory. Bloom filters shine at scale (millions+ of items).
+
+> [!question]- Q: Why "never false negatives, only false positives"?
+> **Answer:** If an element was inserted, all k hash positions are set to 1 — querying it will always return true. But another element may have set those same k bits by coincidence, causing a false positive. The bits can never "unset" themselves to produce a false negative.
+
+> [!question]- Q: How do you choose the size m and number of hash functions k?
+> **Answer:** Given expected elements n and desired FPR ε: m = -n * ln(ε) / (ln 2)² bits, k = (m/n) * ln(2) ≈ 0.693 * (m/n). Example: n=1M, ε=1% → m≈9.6M bits (~1.2 MB), k≈7 hash functions.
+
+> [!question]- Q: What's a Counting Bloom Filter?
+> **Answer:** Instead of single bits, use small counters (e.g., 4 bits) at each position. Insert increments k counters; delete decrements them. Query returns true if all k counters > 0. The trade-off is more memory (counters instead of bits) and a tiny risk of counter overflow.
+
+> [!question]- Q: When is a Bloom filter better than a hash set?
+> **Answer:** When memory is constrained and a small false positive rate is acceptable. Example: Chromium's Safe Browsing uses Bloom filters to check URLs against a blocklist without storing the full blocklist locally. A hash set would require orders of magnitude more memory.
 
 ### Resources
 
@@ -2615,6 +2931,25 @@ RandomLevel():
         level ← level + 1
     return min(level, MAX_LEVEL)
 ```
+
+> [!warning] Pitfalls
+> - **Random level generation bias** — using a global seed or predictable PRNG can cause adversarial performance. Use thread-local random or cryptographic randomness for fairness.
+> - **Forgetting to update forward pointers at all levels** — during insertion, you must update `update[i].forward[i]` for every level i ≤ newLevel. Missing a level corrupts the skip list.
+> - **Over-reliance on skip lists in production** — while O(log n) expected, skip lists have larger constant factors than B-Trees and AVL trees due to pointer chasing. For in-memory use, balanced BSTs are typically faster.
+> - **Max level too low** — with p = 0.5, MAX_LEVEL = 16 handles ~2^16 = 65K elements at expected O(log n). For millions of elements, use MAX_LEVEL = 32 or 64.
+> - **Not handling duplicates** — some skip list implementations allow duplicates and maintain insertion order (useful for multi-sets). Clarify whether your implementation supports duplicates.
+
+> [!question]- Q: Why use a Skip List over a balanced BST?
+> **Answer:** Skip lists are simpler to implement (no rotations, no rebalancing). They provide O(log n) expected time with probabilistic guarantees. Used in Redis sorted sets for range queries and ranking. The trade-off: they use more memory (multiple forward pointers per node).
+
+> [!question]- Q: How does the search for element 25 work in a 3-level skip list?
+> **Answer:** Start at the highest level of the head node. Move forward until the next element > 25, then drop one level. Repeat until level 0. At level 0, either the next element is 25 (found) or > 25 (not present). The expected number of steps is O(log n).
+
+> [!question]- Q: What determines the expected height of a skip list?
+> **Answer:** Each node's level is generated with geometric distribution: P(level ≥ k) = p^k. With p = 0.5, ~50% of nodes are at level 1, ~25% at level 2, ~12.5% at level 3, etc. Expected number of levels = log_{1/p}(n). The list is expected to be well-balanced.
+
+> [!question]- Q: What's the relationship between skip lists and probability p?
+> **Answer:** p controls the trade-off between time and space. p=0.5 gives ~2 forward pointers per node on average (expected levels = 2) and O(log n) search. p=0.25 uses less memory (~1.33 pointers) but slower search. p=0.5 is the standard choice.
 
 ### Resources
 
@@ -2733,6 +3068,25 @@ UpdateFrequency(node):
 - LRU Cache (LeetCode 146)
 - LFU Cache (LeetCode 460)
 - Design patterns for caching systems
+
+> [!warning] Pitfalls
+> - **LRU with O(1) get and put** — requires a HashMap + DoublyLinkedList. The HashMap gives O(1) node lookup; the doubly linked list gives O(1) insertion at head and removal from any position. Using an array or singly linked list cannot achieve O(1) for both operations.
+> - **LFU eviction tie-breaking** — when multiple keys have the same frequency, LFU must evict the least recently used among them. Often implemented as LFU + LRU hybrid: each frequency bucket is an LRU list.
+> - **Not updating LFU counter on get** — in LFU, `get(key)` increases that key's access frequency and may move it to a different frequency bucket. Forgetting this means the key stays at an old (lower) frequency.
+> - **Cache stampede** — when a popular cached item expires, many requests simultaneously hit the database to recompute it. Use probabilistic early expiration or request coalescing (only one thread recomputes).
+> - **Thread safety of cache implementations** — the standard LRU/LFU implementations (HashMap + LinkedList) are not thread-safe. For concurrent access, use `ConcurrentHashMap` + `ConcurrentLinkedDeque` or a read-write lock.
+
+> [!question]- Q: How does an LRU Cache achieve O(1) get and put?
+> **Answer:** **HashMap** maps key → node reference for O(1) lookup. **Doubly Linked List** keeps nodes in access order (head = most recent, tail = least recent). On get/put, move the accessed node to head. On eviction, remove tail. Both move and remove are O(1) because we have the node reference from the HashMap.
+
+> [!question]- Q: What's the difference between LRU and LFU?
+> **Answer:** **LRU** (Least Recently Used): evicts the item not accessed for the longest time. Favors recency. **LFU** (Least Frequently Used): evicts the item with the lowest access count. Favors frequency. LFU handles "frequently accessed cold items" better; LRU is simpler and works well for temporal locality.
+
+> [!question]- Q: When does LFU beat LRU?
+> **Answer:** LFU beats LRU when access patterns are frequency-based rather than recency-based. Example: a news site where top articles get hit constantly while newer articles get sporadic bursts. LRU might evict a frequently-accessed item that hasn't been accessed in the last minute; LFU preserves it due to high cumulative count.
+
+> [!question]- Q: How do you avoid cache stampede?
+> **Answer:** Techniques: (1) **Probabilistic early expiration** — expire items at t * (1 + random(0, delta)) instead of exactly at t. (2) **Request coalescing** — the first request that finds a missing key initiates the recomputation; other concurrent requests wait on a promise/future for the result.
 
 ### Resources
 

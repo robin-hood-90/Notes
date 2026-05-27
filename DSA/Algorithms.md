@@ -2,7 +2,7 @@
 tags: [dsa, algorithms, java]
 aliases: ["DSA Algorithms"]
 status: stable
-updated: 2026-05-01
+updated: 2026-05-27
 ---
 
 # Algorithms - Complete Guide (Beginner to Advanced)
@@ -39,6 +39,7 @@ updated: 2026-05-01
 16. [Computational Geometry](#16-computational-geometry)
 17. [Network Flow](#17-network-flow)
 18. [NP-Completeness and Approximation](#18-np-completeness-and-approximation)
+19. [Branch and Bound](#19-branch-and-bound)
 
 ---
 
@@ -124,6 +125,26 @@ For recurrences of the form `T(n) = aT(n/b) + O(n^d)`:
 - **Auxiliary space** — extra space used beyond input
 - **In-place** — O(1) auxiliary space
 - **Recursion stack** — counts toward space complexity (O(depth))
+
+> [!warning] Pitfalls
+> - **Dropping lower-order terms too early** — when comparing O(n² + n log n), don't mentally drop the `n log n` before checking if it dominates a *different* algorithm's O(n log n). Keep all terms until you've identified the dominant one.
+> - **Space complexity includes recursion stack** — a recursive DFS that mutates in-place is **not** O(1) space; the call stack adds O(depth) space. This is the #1 space complexity mistake in interviews.
+> - **Master Theorem misapplication** — it only applies to recurrences of the form `T(n) = aT(n/b) + f(n)`. If `b` is not constant (e.g., `T(n) = T(n-1) + n`), use the substitution method or recurrence tree instead.
+> - **Confusing amortized with average** — amortized analysis is a worst-case guarantee spread across operations, not an average over random inputs. A dynamic array has **amortized** O(1) push, but any specific push can still be O(n).
+> - **Log base confusion** — O(log₂ n), O(log₁₀ n), and O(logₑ n) are all the same in big-O (differ by a constant factor). Don't overthink the base unless it appears in the exponent.
+> - **Calling an algorithm O(1) because input is small** — by definition, complexity describes growth as input grows. A function with a fixed 100-element loop is O(100) = O(1), but an algorithm that runs 100× per input element is O(n), not O(1). Describe in terms of input size `n`.
+
+> [!question]- Q: What's the difference between O, Θ, and Ω?
+> **Answer:** **O (Big-O)** = worst-case upper bound (the function grows at most this fast). **Ω (Omega)** = best-case lower bound (grows at least this fast). **Θ (Theta)** = tight bound (grows exactly this fast). For example, merge sort is O(n log n), Ω(n log n), and Θ(n log n) in all cases. QuickSort is O(n²) worst, Ω(n log n) best, no tight Θ for all cases.
+
+> [!question]- Q: How do you analyze space complexity for recursive algorithms?
+> **Answer:** Sum the space at each level of the recursion tree. For each level, the call stack stores local variables + return address. In linear recursion (one call per level, depth d), space = O(d * size_per_frame). In divide-and-conquer (branching), the maximum stack depth is usually O(log n) because calls complete before siblings start, but this depends on evaluation order.
+
+> [!question]- Q: What's an example of amortized analysis?
+> **Answer:** A dynamic array (ArrayList) doubles capacity when full. Most `add()` calls are O(1), but one in `n` calls triggers an O(n) resize. Over `n` operations, total cost = `n*O(1) + O(n) + O(n/2) + O(n/4) + ... = O(n)`. Per operation: O(n)/n = O(1) amortized. The accounting method "charges" each cheap operation extra to build credit for future expensive ones.
+
+> [!question]- Q: When does the Master Theorem NOT apply?
+> **Answer:** When `b` is not constant (`T(n) = T(n-1) + n`), when `f(n)` is not polynomial (`T(n) = 2T(n/2) + n/log n`), or when `a` and `b` are not constants (`T(n) = n*T(n/2) + n`). In these cases, use recursion tree analysis or the substitution method.
 
 ### Resources
 
@@ -334,6 +355,26 @@ BucketSort(A[1 .. n]):
     return result
 ```
 
+> [!warning] Pitfalls
+> - **Stability confusion** — stable sorts (merge, insertion, bubble) preserve relative order of equal elements; unstable sorts (quick, heap, selection) do not. When sorting objects by one key then another (chained sorting), you *must* use a stable sort for the second pass.
+> - **Quicksort O(n²) with sorted/pivoted worst-case** — always pick a pivot from the middle or random; picking the first or last element on sorted/nearly-sorted data triggers O(n²). This is why libraries use IntroSort (quicksort + heapsort fallback).
+> - **Merge Sort's O(n) auxiliary space** — merge sort requires a temporary array of size n. For linked lists, it's O(1) extra space; for arrays, it's not in-place. Mention this trade-off in interviews.
+> - **Counting Sort on large range** — if `k` (range) >> `n`, counting sort is O(n+k) which degenerates to O(k), potentially worse than O(n log n). Only use when `k = O(n)`.
+> - **Radix Sort with variable-length keys** — LSD radix sort requires equal-length keys or padding. MSD radix sort handles variable-length naturally but is more complex.
+> - **Sorting floating-point with comparison sorts** — NaN comparisons are undefined; sorting arrays with NaN can lead to inconsistent ordering. Handle NaN separately or use a total order comparator.
+
+> [!question]- Q: What makes a sorting algorithm "stable" and why does it matter?
+> **Answer:** Stable = equal elements retain their original relative order. Example: sorting a list of people by name, then by age — if the age sort is stable, people with the same age remain sorted by name. Without stability, the name ordering is lost.
+
+> [!question]- Q: When would you use Insertion Sort over QuickSort?
+> **Answer:** Insertion sort is O(n) on nearly-sorted data and has tiny constant factors. Hybrid sorts (TimSort, IntroSort) use Insertion Sort for small subarrays (n < 32–64) since the overhead of recursion and partitioning exceeds the cost of quadratic sorting on tiny arrays.
+
+> [!question]- Q: How does Counting Sort achieve O(n + k) and when is it better than comparison sorts?
+> **Answer:** It counts frequencies of each key, then computes prefix sums to determine positions. Since it never compares elements, it bypasses the Ω(n log n) lower bound. Best when k = O(n) and keys are integers in a known range.
+
+> [!question]- Q: What's the Ω(n log n) comparison-sorting lower bound, and why?
+> **Answer:** Any comparison-based sort makes decisions via a decision tree with n! leaves (one per permutation). A binary tree with L leaves has height ≥ log₂(L). Thus height ≥ log₂(n!) ≈ n log n. Non-comparison sorts (counting, radix) escape this bound because they use key values as array indices.
+
 ### Resources
 
 - [Sorting Algorithms - GeeksforGeeks](https://www.geeksforgeeks.org/sorting-algorithms/)
@@ -500,6 +541,26 @@ ExponentialSearch(A[1 .. n], x):
     return BinarySearch(A, i/2 + 1, min(i, n), x)
 ```
 
+> [!warning] Pitfalls
+> - **Integer overflow in mid calculation** — `(lo + hi) / 2` overflows when `lo + hi > Integer.MAX_VALUE`. Always use `lo + (hi - lo) / 2` in languages with fixed-width integers.
+> - **Infinite loop with `mid = (lo + hi) / 2` and `lo = mid`** — when `lo` and `hi` differ by 1, `mid = lo` (floor division), and `lo = mid` never advances. Fix: use `mid = lo + (hi - lo + 1) / 2` (upper mid) or `lo = mid + 1`.
+> - **Boundary conditions in lower/upper bound** — the returned index might be `n + 1` (beyond array). Always check bounds before accessing the result.
+> - **Interpolation search on non-uniform data** — assumes uniform distribution. On skewed data (e.g., exponentially distributed), performance degrades to O(n). Use binary search unless you know the distribution.
+> - **Exponential search forgetting to bound** — `i = min(i*2, n)` is critical; without the min, you'll exceed the array bounds.
+> - **Searching in sorted 2D matrix** — staircase search (start from top-right, move left or down) is O(m+n), while binary search on 1D projection is O(log m + log n). Know both approaches — staircase search doesn't require converting the 2D index.
+
+> [!question]- Q: When should I use Interpolation Search over Binary Search?
+> **Answer:** Only when the data is uniformly distributed and you need maximum speed (O(log log n) average). Phone books and dictionary lookups are good candidates. For general purpose sorted data, binary search is more reliable (consistent O(log n)).
+
+> [!question]- Q: What's the difference between lower bound and first occurrence?
+> **Answer:** **Lower bound** returns the first position where an element **≥ target** can be inserted (even if the target doesn't exist). **First occurrence** returns the first position where the element **== target** exists, or -1 if absent. Lower bound is more general — first occurrence = lower_bound; then check if array[ans] == target.
+
+> [!question]- Q: Why does Exponential Search make sense for unbounded arrays?
+> **Answer:** When you don't know the array size (e.g., a sorted stream or infinite array), you can't binary search because you don't know the right boundary. Exponential search finds the range [2^(k-1), 2^k] where the target lies in O(log n) comparisons, then binary searches within that range.
+
+> [!question]- Q: How do you handle binary search with duplicates?
+> **Answer:** To find the **first** occurrence, when `A[mid] == target`, set `hi = mid` (not `return mid`). To find the **last** occurrence, use `mid = lo + (hi - lo + 1) / 2` and when `A[mid] == target`, set `lo = mid`. Both terminate with lo pointing to the boundary.
+
 ### Resources
 
 - [Binary Search - GeeksforGeeks](https://www.geeksforgeeks.org/binary-search/)
@@ -580,7 +641,7 @@ Backtrack(candidate, state):
 - **Constraint propagation** — eliminate choices early
 - **Ordering heuristics** — try most constrained variable first (MRV)
 - **Symmetry breaking** — avoid redundant explorations
-- **Bounding** — skip branches that cannot improve on current best (branch & bound)
+- **Bounding** — skip branches that cannot improve on current best (see [[#19-branch-and-bound|Branch and Bound]])
 
 #### Classic Backtracking Problems
 
@@ -684,6 +745,25 @@ Backtrack(A, remain, start, path, result):
         path.pop()
 ```
 
+> [!warning] Pitfalls (continued)
+> - **Exploding state space without memoization** — recursive Fibonacci without memoization recalculates the same subproblem exponentially many times. Always check for overlapping subproblems before writing pure recursion.
+> - **Backtracking vs recursion confusion** — all backtracking uses recursion, but not all recursion is backtracking. Backtracking means you **undo** choices to explore alternatives; simple divide-and-conquer recursion does not.
+> - **Mutable arrays shared across recursive calls** — when the same array/object is modified in each recursive call, ensure you undo changes during backtracking. Forgetting `board[row][col] ← empty` is the single most common backtracking bug.
+> - **Pruning too aggressively** — a bounding function that accidentally prunes valid solutions (e.g., wrong constraint check) makes backtracking silently miss answers. Test pruning logic independently on small cases.
+> - **Recursion depth limits** — recursion depth > 10,000 typically causes StackOverflowError. For problems with n > 10,000, use an explicit stack (iterative approach) or increase stack size via JVM flags.
+
+> [!question]- Q: How do you convert a recursive solution to an iterative one?
+> **Answer:** Use an explicit stack that stores the state (function parameters + local variables). For tail-recursive functions, you can convert to a simple while loop. For tree/graph traversals, use a Stack or Queue with a visited set. The explicit stack gives you control over memory and avoids recursion limits.
+
+> [!question]- Q: What's the difference between permutations, combinations, and subsets in backtracking?
+> **Answer:** **Permutations**: order matters, use all elements → swap-based backtracking. **Combinations**: order doesn't matter, pick k from n → include/exclude with start index. **Subsets**: all combinations of any size → include/exclude with start index or bitmask. The `start` parameter prevents revisiting and distinguishes combinations from permutations.
+
+> [!question]- Q: When does backtracking beat BFS/DFS for search problems?
+> **Answer:** Backtracking is for **constraint satisfaction** (N-Queens, Sudoku, graph coloring) where you build solutions incrementally and check constraints early. BFS/DFS are for state-space search where the graph structure is explicit (mazes, puzzles). Backtracking prunes via constraints; BFS/DFS explore all reachable states.
+
+> [!question]- Q: What's the worst-case time complexity of backtracking and how do you control it?
+> **Answer:** Most backtracking problems are O(b^d) where b = branching factor, d = decision depth (e.g., O(N!) for N-Queens, O(9^81) for Sudoku). Control it with: pruning (constraint propagation), ordering heuristics (most constrained first), symmetry breaking, and bounding (branch & bound for optimization).
+
 ### Resources
 
 - [Backtracking - GeeksforGeeks](https://www.geeksforgeeks.org/backtracking-algorithms/)
@@ -693,6 +773,38 @@ Backtrack(A, remain, start, path, result):
 ---
 
 ## 5. Divide and Conquer
+
+> [!summary] Intuition
+> Instead of tackling a problem head-on, divide and conquer says: "Break it into smaller pieces, solve each piece, and stitch the answers together." Think of Merge Sort — sorting a million numbers seems hard, but sorting two sorted half-million arrays and merging them is trivial. The magic is that the merge step (O(n)) plus the recursive splitting (O(log n)) gives you O(n log n) — far better than brute force.
+
+```mermaid
+flowchart TD
+    subgraph DC["Divide and Conquer Pattern"]
+        D1["Original Problem (size n)"] --> D2["Subproblem (size n/2)"]
+        D1 --> D3["Subproblem (size n/2)"]
+        D2 --> D4["Sub-subproblem (size n/4)"]
+        D2 --> D5["Sub-subproblem (size n/4)"]
+        D3 --> D6["Sub-subproblem (size n/4)"]
+        D3 --> D7["Sub-subproblem (size n/4)"]
+        D4 -.-> D8["Base case (size 1): trivially solved"]
+        D5 -.-> D8
+        D6 -.-> D8
+        D7 -.-> D8
+        D8 --> D9["Combine: merge subproblem solutions upward"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | D&C Technique |
+|-----------------|--------------|
+| "Divide array, process halves, combine results" | Merge Sort, Count Inversions |
+| "Find kth smallest / order statistic" | QuickSelect |
+| "Closest / farthest pair among points" | Closest Pair of Points |
+| "Multiply large numbers / matrices efficiently" | Karatsuba, Strassen's |
+| "Maximum subarray crossing a midpoint" | Max Subarray (D&C) |
+| "Recurrence has form T(n) = aT(n/b) + O(n^d)" | Master Theorem applies |
+| "Problem can be split into independent halves" | Candidate for D&C |
 
 ### Overview
 
@@ -820,6 +932,25 @@ MaxCrossingSum(A, lo, mid, hi):
     return leftSum + rightSum
 ```
 
+> [!warning] Pitfalls
+> - **Incorrect base case** — the D&C base case determines correctness and performance. Too small → unnecessary recursion overhead. Too large → you're brute-forcing at the base. Size 1 for simple problems, size ≤ 3 or 10 for geometry/numeric problems.
+> - **Merge step dominates** — if the combine step is O(n²) and the divide step is O(n log n), the total complexity is O(n²), not O(n log n). Always check which phase dominates the recurrence.
+> - **Uneven split degradation** — QuickSort's worst case (n-1 and 0 split) is technically still D&C but degrades to O(n²). For guaranteed performance, ensure balanced partitioning (median of medians, random pivot, or split around the middle).
+> - **Stack overflow from deep recursion** — D&C recursions go O(log n) deep for balanced splits, but O(n) deep for worst-case splits. Use iterative versions for large inputs or when worst-case depth is a concern.
+> - **Recomputing overlapping subproblems** — if subproblems overlap (e.g., naive recursive Fibonacci), D&C alone doesn't memoize. Switch to DP for overlapping subproblems. D&C requires **non-overlapping** subproblems.
+
+> [!question]- Q: How is Divide and Conquer different from Dynamic Programming?
+> **Answer:** Both split problems into subproblems. D&C subproblems are **independent/non-overlapping** (like merge sort — left half and right half don't share work). DP subproblems **overlap** (like Fibonacci — F(n-1) and F(n-2) both need F(n-3)). DP caches results; D&C just recurses.
+
+> [!question]- Q: Why is Merge Sort's divide step O(1) while the combine step is O(n)?
+> **Answer:** "Divide" in merge sort just computes the midpoint index — O(1). The "combine" merges two sorted halves, which requires comparing and copying each element — O(n). Not all D&C algorithms follow this pattern; in QuickSort, the "divide" (partitioning) is O(n) and the "combine" is O(1) (just concatenate).
+
+> [!question]- Q: What's the Strassen algorithm and why is it important?
+> **Answer:** Strassen multiplies two n×n matrices in O(n^2.807) instead of O(n³) by reducing 8 recursive multiplications to 7. It was the first algorithm to beat the naive O(n³) bound, proving the possibility of sub-cubic matrix multiplication. In practice, the constant overhead means it's only useful for very large matrices.
+
+> [!question]- Q: When do you use Median of Medians vs randomized QuickSelect?
+> **Answer:** Median of Medians gives **deterministic O(n)** worst-case selection by guaranteeing a good pivot (~30%-70% split). Randomized QuickSelect is O(n) expected with much smaller constants. Use MoM when worst-case guarantees are required (hard real-time systems); use randomized QuickSelect in practice (LeetCode, competitive programming).
+
 ### Resources
 
 - [Divide & Conquer - GeeksforGeeks](https://www.geeksforgeeks.org/divide-and-conquer/)
@@ -871,6 +1002,18 @@ A greedy algorithm makes the locally optimal choice at each step, hoping to find
 | Guarantee | Not always optimal | Always optimal (if applicable) |
 | Speed | Usually faster | Often slower |
 | Example | Fractional knapsack | 0/1 knapsack |
+
+### How to Recognize
+
+| Problem Pattern | Greedy Approach |
+|-----------------|----------------|
+| "Maximize number of non-overlapping intervals" | Activity Selection (sort by finish time) |
+| "Minimum number of resources/rooms" | Interval Partitioning (sort by start time) |
+| "Fill capacity to maximize value with fractional items" | Fractional Knapsack (sort by value/weight) |
+| "Choose locally best option at each step" | Greedy (but verify with proof/counterexample) |
+| "Spanning tree with minimum total weight" | Kruskal's or Prim's (greedy edge/vertex selection) |
+| "Encoding with minimum average length" | Huffman Coding (merge two smallest frequencies) |
+| "Schedule jobs to maximize profit with deadlines" | Job Sequencing (sort by profit descending) |
 
 ### Pseudocode
 
@@ -939,6 +1082,26 @@ PrimMST(adj[1 .. V]):             // adjacency list with (to, weight)
                 pq.insert((key[v], v))
     return parent               // MST edges: (parent[v], v)
 ```
+
+> [!warning] Pitfalls
+> - **Assuming greedy always works** — greedy algorithms are problem-specific and must be **proven correct**. For coin change, greedy works for US denominations {1,5,10,25} but fails for {1,3,4} (greedy gives 4+1+1=3 coins, optimal is 3+3=2 coins). Always test on counterexamples.
+> - **Incorrect sorting for interval problems** — activity selection sorts by **finish time**, not start time. Sorting by start time gives suboptimal results. The greedy choice property depends on the correct ordering.
+> - **Fractional vs 0/1 Knapsack confusion** — greedy works for fractional knapsack (take items by value/weight ratio) but **fails** for 0/1 knapsack. In interviews, always confirm which variant is being asked.
+> - **Prim's vs Kruskal's tie-breaking** — when multiple edges have the same weight, different tie-breaking produces different (but equally valid) MSTs. Don't assume the output matches a specific expected order.
+> - **Dijkstra's with negative edges** — greedy Dijkstra fails on negative edges because it assumes "once a node is processed, its distance is final" — an assumption violated by negative edges. Use Bellman-Ford instead.
+> - **Huffman coding on byte-aligned data** — Huffman is optimal for bit-level encoding but adds overhead for small alphabets. For text compression on 8-bit characters, the tree overhead may outweigh the savings.
+
+> [!question]- Q: How do you prove a greedy algorithm is correct?
+> **Answer:** Two standard techniques: **(1) Greedy stays ahead** — show that at every step, the greedy solution is at least as good as any optimal solution. **(2) Exchange argument** — take an optimal solution and transform it step-by-step into the greedy solution without making it worse, proving the greedy solution is also optimal.
+
+> [!question]- Q: Why does greedy work for Fractional Knapsack but not 0/1 Knapsack?
+> **Answer:** In fractional knapsack, you can take pieces of items, so the "best value per weight" strategy is globally optimal — you always fill remaining capacity with the highest-ratio item available. In 0/1, you can't take fractions, so a high-ratio item might block a combination of lower-ratio items that together are more valuable.
+
+> [!question]- Q: What's the difference between coin change (greedy) and coin change (DP)?
+> **Answer:** Greedy works when the coin system is **canonical** (like {1,5,10,25}). DP is required for **arbitrary** coin systems. In interviews, always ask: "Are the coin denominations standard?" If yes, try greedy. If no, use DP.
+
+> [!question]- Q: How do you choose between Prim's and Kruskal's for MST?
+> **Answer:** **Prim's**: O(E log V) with binary heap, better for dense graphs (E ≈ V²) since it processes vertices. **Kruskal's**: O(E log E), better for sparse graphs (E ≈ V) since it processes edges. Use Prim's when graph is given as adjacency list; Kruskal's when edges are given explicitly with weights.
 
 ### Resources
 
@@ -1323,6 +1486,24 @@ DigitDP(L, R):
         dp[pos][tight][state] ← ans
         return ans
 ```
+
+> [!warning] Pitfalls
+> - **Incorrect DP state definition** — the most common DP mistake. The state must capture all information needed to make future decisions. Missing a dimension (e.g., tight/flag/skip count) makes the recurrence incorrect.
+> - **Confusing 0/1 Knapsack with Unbounded Knapsack** — the recurrence differs in **one character**: `dp[i-1][w-weight[i]]` (0/1) vs `dp[i][w-weight[i]]` (unbounded). The wrong choice gives completely different results.
+> - **Incorrect base cases** — DP depends on correct base values. For max problems, initialize with -∞ or Integer.MIN_VALUE. For min problems, use +∞. Incorrect initialization propagates through the entire table.
+> - **1-indexed vs 0-indexed DP table** — when iterating over `i` and `w`, ensure your array bounds match. `dp[i][w]` with `i` from 0..n and `w` from 0..W needs size `[n+1][W+1]`.
+> - **Forgetting the "no-pick" case** — in knapsack-style DP, always consider NOT taking the current item, regardless of whether taking it is feasible. The optimal solution often skips high-value items.
+> - **Space optimization breaking backtracking** — when you reduce DP from O(n*W) to O(W) by using 1D arrays, you lose the ability to reconstruct *which* items were chosen. If the problem asks for the actual subset/path, keep the full table.
+> - **String DP off-by-one** — LCS/LPS/Edit Distance recurrences use `dp[i-1][j-1]`, `dp[i-1][j]`, `dp[i][j-1]`. Off-by-one errors in the recurrence indices are extremely common. Always trace through a small example manually.
+
+> [!question]- Q: How do you identify a DP problem?
+> **Answer:** Look for three signals: **(1)** The prompt asks for "minimum/maximum/count/total number of ways." **(2)** You can express the answer in terms of smaller subproblems (optimal substructure). **(3)** The same subproblems are asked multiple times (overlapping subproblems). If only #1 and #2 hold, it might be greedy or divide-and-conquer instead.
+
+> [!question]- Q: What's the difference between top-down and bottom-up DP?
+> **Answer:** **Top-down** (memoization): write recursive function, cache results. Pros: intuitive, only computes needed states. Cons: recursion overhead, stack overflow risk. **Bottom-up** (tabulation): build table from base cases upward. Pros: no recursion, often faster. Cons: must compute all states, order matters.
+
+> [!question]- Q: How do you approach a DP problem from scratch?
+> **Answer:** **(1)** Define the state: what parameters uniquely describe a subproblem? **(2)** Define the recurrence: how does the answer for state X depend on smaller states? **(3)** Define base cases: what are the trivial answers? **(4)** Determine iteration order: which dimension is outer? **(5)** Implement: either recursive+memo or iterative table. **(6)** Optional: optimize space.
 
 ### Resources
 
@@ -1749,6 +1930,27 @@ AStarSearch(G, start, goal, heuristic):
     return failure
 ```
 
+> [!warning] Pitfalls
+> - **Dijkstra's with negative edges** — Dijkstra's greedily fixes distances; a negative edge can produce a shorter path through an already-processed node. Always use Bellman-Ford or SPFA when negative edges exist.
+> - **DFS recursion depth on large graphs** — a graph with 10^5 nodes in a chain causes StackOverflowError with recursive DFS. Use an explicit Stack or BFS for large/deep graphs.
+> - **Not tracking visited in undirected DFS** — without a visited set (or parent parameter to skip the previous node), DFS cycles infinitely between two connected nodes.
+> - **Topological sort on cyclic graphs** — Kahn's algorithm (BFS) detects cycles (remaining nodes with non-zero indegree); DFS-based toposort requires cycle detection first. Attempting toposort on a cyclic graph silently produces incorrect orderings.
+> - **MST for disconnected graphs** — Prim's and Kruskal's produce a **minimum spanning forest**, not a single tree, for disconnected graphs. Always check connectivity if the problem requires a single spanning tree.
+> - **Floyd-Warshall for dense graphs only** — O(V³) is fine for V ≤ 500. For V > 500 with sparse edges, run Dijkstra from each source (O(V * E log V)) which is faster when E << V².
+> - **Integer overflow in shortest path distances** — when using `Integer.MAX_VALUE` or `INF` for unreachable nodes, adding a weight to INF overflows to a negative number, breaking the algorithm. Use `Long.MAX_VALUE / 2` or add explicit overflow checks.
+
+> [!question]- Q: When should I use BFS vs DFS?
+> **Answer:** **BFS** = shortest path in unweighted graphs, level-order traversal, "minimum steps" problems. **DFS** = cycle detection, topological sort, connected components, SCCs, path existence (any path), backtracking on implicit graphs. BFS uses more memory (stores a level); DFS can get lost in deep paths.
+
+> [!question]- Q: What's the difference between Dijkstra's and Bellman-Ford?
+> **Answer:** **Dijkstra's** (O(E log V)): works only with non-negative edge weights; uses greedy selection via priority queue. **Bellman-Ford** (O(VE)): handles negative edges and detects negative cycles (n-th relaxation still improves distance). Use Dijkstra's unless negative edges are present.
+
+> [!question]- Q: Why does Topological Sort matter and when is it used?
+> **Answer:** Topological sort orders all vertices such that every directed edge u→v has u before v. Used for: task scheduling with dependencies, resolving build systems, finding shortest paths in DAGs (O(V+E)), and detecting deadlocks. Only possible on DAGs.
+
+> [!question]- Q: What's the key idea behind Floyd-Warshall for all-pairs shortest paths?
+> **Answer:** It iterates over intermediate vertices k, updating `dist[i][j] = min(dist[i][j], dist[i][k] + dist[k][j])`. After the k-th iteration, all shortest paths using vertices {1..k} as intermediates are computed. The DP recurrence is: either go through k or don't. O(V³) but extremely concise to implement.
+
 ### Resources
 
 - [Graph Algorithms - GeeksforGeeks](https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/)
@@ -1950,6 +2152,26 @@ Manacher(s):
     return s[start .. start + maxLen - 1]
 ```
 
+> [!warning] Pitfalls
+> - **KMP LPS array off-by-one** — the LPS value is the length of the longest proper prefix that is also a suffix. It is NOT the index to jump to; the jump target is `lps[j-1]` when a mismatch occurs at position j.
+> - **Rabin-Karp hash collisions** — rolling hash is probabilistic; two different strings can have the same hash. Always verify matches with character-by-character comparison. Use a large prime modulus (e.g., 10^9+7) and double hashing to minimize collision probability.
+> - **Z-Algorithm search string format** — when searching for pattern P in text T, concatenate `P + "$" + T`. The `$` separator (any character not in the alphabet) prevents Z-values from exceeding |P| by spanning across the pattern and text.
+> - **Manacher's on non-padded strings** — Manacher's requires preprocessing: insert `#` between all characters (and at ends) to handle both even and odd-length palindromes uniformly. Skipping this step breaks the symmetry logic.
+> - **Trie memory blowup** — a naive Trie with 26 children per node for the full alphabet wastes memory (26 * 10^5 pointers). Use a hashmap of children or compressed trie (Radix tree) for sparse alphabets.
+> - **Comparing strings with `==` in Java** — `str1 == str2` compares references, not content. Always use `.equals()` for string value comparison.
+
+> [!question]- Q: Why is KMP O(n + m) and not O(n * m) like brute force?
+> **Answer:** KMP's text pointer `i` never backtracks. When a mismatch occurs, the LPS array tells exactly how much of the pattern prefix is still matched. Each character is compared at most twice — once when matching and once when a mismatch causes the pattern pointer to fall back. Total comparisons are bounded by O(2n).
+
+> [!question]- Q: When should I use Rabin-Karp over KMP?
+> **Answer:** Rabin-Karp shines for **multiple pattern matching** — searching for many patterns simultaneously. Compute hashes for all patterns, then slide the rolling hash over the text and check against a hash set. KMP builds a separate automaton per pattern. Also, RK's rolling hash is useful beyond string matching (e.g., finding duplicate substrings of fixed length).
+
+> [!question]- Q: How does Manacher's algorithm achieve O(n) for longest palindromic substring?
+> **Answer:** It exploits palindromic symmetry: when the current center i is inside a previously found palindrome centered at C with right boundary R, the palindrome at i matches the mirror palindrome at i' = 2C - i (at least up to R - i). This mirroring avoids re-checking known characters, giving O(n) total expansions.
+
+> [!question]- Q: What's the difference between Suffix Array and Suffix Tree?
+> **Answer:** Both index all suffixes of a string. **Suffix Tree** = explicit tree structure, O(n) construction but high memory overhead. **Suffix Array** = sorted array of suffix indices, O(n log n) or O(n) construction, lower memory. Suffix Array + LCP array provides the same functionality as Suffix Tree with less memory. Most competitive programming uses Suffix Array.
+
 ### Resources
 
 - [String Algorithms - CP-Algorithms](https://cp-algorithms.com/string/)
@@ -2022,6 +2244,20 @@ Power(base, exp, mod):
 | **Fibonacci Numbers** | F(n) = F(n-1) + F(n-2); matrix exponentiation for O(log n) |
 | **Inclusion-Exclusion** | |A∪B| = |A| + |B| - |A∩B| |
 | **Pigeonhole Principle** | n items in m boxes (n > m) → at least one box has > 1 |
+
+### How to Recognize
+
+| Problem Pattern | Math Technique |
+|-----------------|---------------|
+| "GCD / LCM / factors / divisors" | Euclidean algorithm, prime factorization |
+| "Prime numbers up to n" | Sieve of Eratosthenes |
+| "Is this number prime?" | Miller-Rabin (large numbers), trial division (small) |
+| "a^b mod m" (large exponent) | Fast exponentiation (binary exponentiation) |
+| "nCr / permutations modulo p" | Precomputed factorials + modular inverse |
+| "Solve system of congruences" | Chinese Remainder Theorem |
+| "Linear recurrence (Fibonacci, tribonacci)" | Matrix exponentiation |
+| "Count coprime numbers up to n" | Euler's Totient Function |
+| "Distribute identical items into bins" | Stars and Bars combinatorics |
 
 ### Matrix Exponentiation
 
@@ -2106,6 +2342,26 @@ BinomialMod(n, r, mod):
     return fact[n] * invFact[r] % mod * invFact[n - r] % mod
 ```
 
+> [!warning] Pitfalls
+> - **Integer overflow in modular arithmetic** — `(a * b) % mod` overflows if `a * b > Long.MAX_VALUE` in 64-bit. Use modular multiplication with binary exponentiation or 128-bit intermediates (`__int128` in C++, `BigInteger` in Java) for very large moduli.
+> - **Sieve vs Primality Test confusion** — Sieve of Eratosthenes precomputes all primes up to n in O(n log log n) — good for many queries. For checking a single large number (n > 10^12), use Miller-Rabin (probabilistic). Running Sieve for a single primality check is wasteful.
+> - **GCD of negative numbers** — `a % b` in some languages (C++, Java) returns a negative result when `a` is negative. `gcd(abs(a), abs(b))` guarantees correctness, or use `gcd(a, (b%a + a)%a)`.
+> - **Fermat's Little Theorem assumptions** — `a^(p-1) ≡ 1 (mod p)` only holds when `p` is prime AND `a` is not divisible by `p`. For modular inverse: `a^(p-2) mod p` only works when p is prime and gcd(a,p) = 1.
+> - **Combinatorics overflow in nCr** — `nCr` grows extremely fast (C(100, 50) has 30 digits). Use modulo arithmetic or big integers. Precomputing factorials up to n is O(n) space — use O(1) space multiplicative formula if memory is tight.
+> - **Matrix exponentiation for non-linear recurrences** — only works for **linear** recurrences (like Fibonacci). Problems like "Catalan numbers" or "subset-based DP" cannot be expressed as matrix exponentiation.
+
+> [!question]- Q: What's the time complexity of the Sieve of Eratosthenes and why?
+> **Answer:** O(n log log n). For each prime p, we mark all multiples starting from p². The sum of 1/p over primes ≤ n is approximately log log n, giving total operations ≈ n * Σ(1/p) ≈ n log log n. The inner loop runs roughly n/2 + n/3 + n/5 + ... = n * (1/2 + 1/3 + 1/5 + ...).
+
+> [!question]- Q: How do you compute nCr mod p when p is prime?
+> **Answer:** Precompute factorials and inverse factorials up to n modulo p: `fact[i] = fact[i-1] * i % p`, `invFact[n] = pow(fact[n], p-2, p)` (Fermat's Little Theorem), and `invFact[i-1] = invFact[i] * i % p` (downward). Then `nCr = fact[n] * invFact[r] % p * invFact[n-r] % p`. O(n) preprocessing, O(1) per query.
+
+> [!question]- Q: When would you use Extended Euclidean over Fermat for modular inverse?
+> **Answer:** Extended Euclidean works for any modulus m (not necessarily prime) as long as gcd(a, m) = 1. Fermat's Little Theorem (a^(m-2) mod m) only works when m is prime. Use Extended Euclidean for composite moduli or when you're unsure about primality.
+
+> [!question]- Q: How does matrix exponentiation compute Fibonacci in O(log n)?
+> **Answer:** `[F(n), F(n-1)] = [F(1), F(0)] * M^(n-1)` where M = [[1,1],[1,0]]. Computing M^(n-1) uses fast exponentiation (square and multiply) in O(log n) matrix multiplications. Each 2×2 matrix mult is O(k³) = O(8). Total: O(log n).
+
 ### Resources
 
 - [Mathematical Algorithms - GeeksforGeeks](https://www.geeksforgeeks.org/mathematical-algorithms/)
@@ -2115,6 +2371,39 @@ BinomialMod(n, r, mod):
 ---
 
 ## 11. Bit Manipulation
+
+> [!summary] Intuition
+> Bit manipulation is the art of exploiting a number's **binary representation** for O(1) operations that would normally take loops. Instead of iterating through bits to count set bits, use `n & (n-1)` (clears the lowest set bit). Instead of checking even/odd with modulo, use `n & 1`. Bitwise operations are the **fastest CPU instructions** — they translate directly to single machine instructions with no branching.
+
+```mermaid
+flowchart TD
+    subgraph Bits["Common Bit Operations on n=12 (1100 in binary)"]
+        B1["n = 12 = 1100₂"] --> B2["n & 1 = 0 → even"]
+        B1 --> B3["n & (n-1) = 1100 & 1011 = 1000 (8) → clears lowest set bit"]
+        B1 --> B4["n & (-n) = 1100 & 0100 = 0100 (4) → isolates lowest set bit"]
+        B1 --> B5["n >> 1 = 0110 (6) → divide by 2"]
+        B1 --> B6["n << 1 = 11000 (24) → multiply by 2"]
+    end
+    subgraph Tricks["Power of 2 Check"]
+        T1["8 = 1000₂, 8-1=7=0111₂"] --> T2["8 & 7 = 1000 & 0111 = 0 ✓ → power of 2"]
+        T3["10 = 1010₂, 10-1=9=1001₂"] --> T4["10 & 9 = 1010 & 1001 = 1000 ≠ 0 → NOT power of 2"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Bit Manipulation Approach |
+|-----------------|--------------------------|
+| "Every number appears twice except one" | XOR all elements (a ^ a = 0) |
+| "Find the only non-duplicate / missing number" | XOR with indices or expected values |
+| "Power of 2 / 4 / 8 check" | `n & (n-1) == 0` |
+| "Count set bits (popcount)" | Brian Kernighan's: `n &= n-1` in a loop |
+| "Generate all subsets / combinations" | Bitmask: `for mask in 0..(1<<n)-1` |
+| "Toggle / set / clear specific bits" | Shift and mask operations |
+| "Reverse bits / swap bits" | Shift + mask + OR |
+| "Add two numbers without +" | XOR for sum, AND for carry |
+| "Division / multiplication by powers of 2" | `n >> k` (÷2^k), `n << k` (×2^k) |
+| "Gray code generation" | `i ^ (i >> 1)` |
 
 ### Basic Operations
 
@@ -2208,6 +2497,27 @@ TwoUniqueNumbers(A[1 .. n]):
     return [num1, num2]
 ```
 
+> [!warning] Pitfalls
+> - **Operator precedence** — `n & 1 == 0` is parsed as `n & (1 == 0)`, not `(n & 1) == 0`. Always parenthesize: `(n & 1) == 0`.
+> - **Right shift with signed integers** — `>>` on signed integers in Java does **arithmetic** right shift (preserves sign bit, fills with 1s for negatives). Use `>>>` for logical right shift when you need zero-fill.
+> - **Overflow in left shift** — `1 << 31` on a 32-bit signed integer becomes `Integer.MIN_VALUE` (-2147483648). Use `1L << k` for positions beyond 30.
+> - **`n & (n-1)` on zero** — this is undefined for n=0 in some contexts. Always guard with `while n > 0` in Kernighan's popcount.
+> - **XOR swap with same variable** — `a ^= a` sets a to 0, not preserving the original. The XOR swap trick fails if `a` and `b` are the same memory location (aliasing).
+> - **Bitmask subset enumeration order** — `submask = (submask - 1) & mask` visits subsets in **decreasing** order, ending at 0. If you need increasing order, sort the results separately.
+> - **Assuming 0-based vs 1-based bit indexing** — the "ith bit" can mean the bit at position `1 << i` (0-indexed LSB) or the ith least significant bit (1-indexed). Clarify which convention the problem uses.
+
+> [!question]- Q: Why use `n & 1` instead of `n % 2` to check even/odd?
+> **Answer:** Bitwise operations are a single CPU cycle with no branching. Modulo involves division, which is ~10-30x slower. For hot loops, it matters. For readability, both are fine in most code.
+
+> [!question]- Q: How do I generate all subsets of a set using bitmasks?
+> **Answer:** Each subset of an n-element set corresponds to an n-bit number (0 to 2^n - 1). Bit j = 1 means "include element j". Loop `for (int mask = 0; mask < (1 << n); mask++)` to enumerate all subsets in O(2^n).
+
+> [!question]- Q: What's the time complexity of Brian Kernighan's popcount?
+> **Answer:** O(k) where k is the number of set bits, not the total number of bits. Each iteration clears one set bit. In the worst case (all bits set), it's O(number of bits). This is faster than checking each bit individually.
+
+> [!question]- Q: How do you swap two numbers without a temporary variable?
+> **Answer:** Using XOR: `a ^= b; b ^= a; a ^= b`. This works because XOR is its own inverse and commutative. However, modern compilers already optimize `temp = a; a = b; b = temp` to register-only operations, so XOR swap is mainly a curiosity, not a performance gain.
+
 ### Resources
 
 - [Bit Manipulation - GeeksforGeeks](https://www.geeksforgeeks.org/bit-manipulation-technique/)
@@ -2216,6 +2526,37 @@ TwoUniqueNumbers(A[1 .. n]):
 ---
 
 ## 12. Two Pointers and Sliding Window
+
+> [!summary] Intuition
+> Instead of checking every possible subarray with nested loops (O(n²)), you maintain a **window** (or two pointers) that scans the array in a single pass. Think of it like a **sliding glass pane** moving along a bookshelf — you add to the right side, remove from the left, and the pane stays focused on the current section of interest. Two pointers are the same idea but with two markers that converge or chase each other.
+
+```mermaid
+flowchart TD
+    subgraph TP["Two Pointers: Opposite Direction (Two Sum Sorted)"]
+        T1["Array: [2, 7, 11, 15], target = 9"] --> T2["L=0(2), R=3(15): 2+15=17 > 9 → R=2"]
+        T2 --> T3["L=0(2), R=2(11): 2+11=13 > 9 → R=1"]
+        T3 --> T4["L=0(2), R=1(7): 2+7=9 = target ✓"]
+    end
+    subgraph SW["Sliding Window (Variable-Size): Longest Substring Without Repeating"]
+        W1["'abcabcbb': {a}, max=1"] --> W2["'abc': {a,b,c}, max=3"]
+        W2 --> W3["'abca': duplicate 'a' → shrink left to {b,c,a}, max=3"]
+        W3 --> W4["'bcab': duplicate 'b' → shrink left to {c,a,b}, max=3"]
+        W4 --> W5["'cabc': duplicate 'c' → shrink left to {a,b,c}, max=3"]
+        W5 --> W6["Final: max = 3"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Technique |
+|-----------------|-----------|
+| "Subarray with sum = X" or constraint | Sliding Window / Prefix Sum with Two Pointers |
+| "Longest substring with at most K distinct chars" | Variable-size Sliding Window |
+| Sorted array + find pair/triplet with sum | Two Pointers (opposite direction) |
+| "Remove duplicates in-place from sorted array" | Two Pointers (slow/fast, read/write) |
+| "Check if palindrome" | Two Pointers (opposite ends) |
+| "Container with most water / trapping rain water" | Two Pointers (opposite direction, greedy) |
+| "Linked list cycle detection / find middle" | Two Pointers (slow/fast, Floyd's algorithm) |
 
 ### Two Pointers
 
@@ -2285,6 +2626,27 @@ for right = 0 to n-1:
 | Subarrays with k different integers | Variable |
 | Minimum size subarray sum | Variable |
 
+> [!warning] Pitfalls
+> - **Window validity check** — forgetting to validate the window after shrinking leads to incorrect maximums/minimums. Always check `while (invalid) shrink` inside the loop.
+> - **Off-by-one with fixed windows** — the window size `k` covers indices `[i-k+1, i]` or `[i, i+k-1]`, not `[i-k, i]`. Double-check the subtraction step.
+> - **Using opposite-direction two pointers on unsorted data** — "Two Sum" with opposite pointers only works on sorted arrays. For unsorted, use a hash map.
+> - **Infinite loop in slow/fast pointers** — the while condition `fast != null && fast.next != null` must check both, otherwise you'll null-dereference.
+> - **Shrinking too much or too little** — in variable windows, the while condition should check if the window is **invalid**, not if it's just suboptimal. Otherwise you lose valid candidates.
+> - **Nested for-each instead of sliding window** — for fixed-size windows, compute the first window separately, then slide. Don't recompute from scratch each time (O(n*k) instead of O(n)).
+> - **Forgetting to update the answer inside the loop** — some problems need you to record the answer during expansion, some during shrinking, some after both. Read the problem constraints carefully.
+
+> [!question]- Q: When should I use Two Pointers vs Sliding Window?
+> **Answer:** Two Pointers is the umbrella term. **Sliding Window** = both pointers move monotonically forward (never backward), maintaining a subarray/substring. Other Two Pointer patterns include opposite-direction (sorted array pair search) and fast/slow (linked lists). If you're processing contiguous subarrays, it's a sliding window problem.
+
+> [!question]- Q: How do I handle the fixed-size vs variable-size window distinction?
+> **Answer:** **Fixed-size**: the right pointer moves forward each iteration, and the left follows at `right - k`. Compute first window separately, then slide by subtracting `A[left]` and adding `A[right]`. **Variable-size**: the right pointer also moves forward, but the left advances only when a constraint is violated. The window grows and shrinks dynamically.
+
+> [!question]- Q: Why use while (invalid) instead of if (invalid) when shrinking?
+> **Answer:** After removing one element, the window might still be invalid. For example, with "at most 2 distinct characters", removing one character might still leave 3 distinct characters in the window. A `while` loop ensures the window is fully valid before recording the answer.
+
+> [!question]- Q: What's the time complexity of Sliding Window?
+> **Answer:** O(n) — each element is added once (right pointer) and removed at most once (left pointer). Even though there's a nested while loop, the left pointer advances across the entire array exactly once, so total work is O(2n) = O(n).
+
 ### Resources
 
 - [Two Pointers - GeeksforGeeks](https://www.geeksforgeeks.org/two-pointers-technique/)
@@ -2293,6 +2655,37 @@ for right = 0 to n-1:
 ---
 
 ## 13. Binary Search (Advanced Applications)
+
+> [!summary] Intuition
+> Binary search isn't just for finding numbers in sorted arrays. It's a **decision-to-answer** mapper: when you can answer "is X possible?" in O(n), you can find the **optimal** X in O(n log n) by binary searching the answer space. Imagine searching for the minimum speed to eat all bananas — instead of trying every speed from 1 to max, you binary search: "Can I finish at speed 50? Yes → try slower. No → try faster." The monotonic predicate does the heavy lifting.
+
+```mermaid
+flowchart TD
+    subgraph BSAnswer["Binary Search on Answer: Koko Eating Bananas"]
+        PA["piles = [3,6,7,11], hours = 8"] --> PB["mid=6: hours = ceil(3/6)+ceil(6/6)+ceil(7/6)+ceil(11/6) = 1+1+2+2 = 6 ≤ 8 ✓ → hi=6"]
+        PB --> PC["mid=3: hours = 1+2+3+4 = 10 > 8 ✗ → lo=4"]
+        PC --> PD["mid=5: hours = 1+2+2+3 = 8 ≤ 8 ✓ → hi=5"]
+        PD --> PE["mid=4: hours = 1+2+2+3 = 8 ≤ 8 ✓ → hi=4"]
+        PE --> PF["lo=hi=4 → optimal speed = 4 ✓"]
+    end
+    subgraph Rotated["Binary Search in Rotated Sorted Array"]
+        R1["arr = [4,5,6,7,0,1,2], target = 0"] --> R2["mid=3(arr[3]=7): left half sorted(4≤7), 0 not in [4,7] → lo=4"]
+        R2 --> R3["mid=5(arr[5]=1): left half sorted(0≤1), 0 in [0,1] → hi=4"]
+        R3 --> R4["mid=4(arr[4]=0): found ✓"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Likely Variation |
+|-----------------|-----------------|
+| "Minimize the maximum" / "Maximize the minimum" | Binary Search on Answer |
+| "Capacity / speed / distance to meet a deadline" | Binary Search on Answer with feasibility check |
+| Sorted but rotated/unknown pivot | Modified binary search |
+| "Find peak / find valley" | Binary search on unimodal array |
+| "Two sorted arrays → find median" | Binary search on partitions |
+| "Value exists within a monotonic range" | Binary search on function output |
+| "Allocate / split / divide with constraints" | Binary search on answer + greedy feasibility |
 
 ### Binary Search on Answer
 
@@ -2372,6 +2765,26 @@ FindMedianSorted(A[1 .. n], B[1 .. m]):
     return -1
 ```
 
+> [!warning] Pitfalls
+> - **Incorrect feasibility direction** — when checking `feasible(mid)`, know which direction shrinks the answer. For "minimize maximum", if feasible → try smaller (hi=mid). For "maximize minimum", if feasible → try larger (lo=mid). Getting this backwards overcuts the search space.
+> - **Off-by-one in mid and lo/hi updates** — the template `while lo < hi` with `mid = (lo+hi)/2`, `lo = mid+1` or `hi = mid` must be consistent. Mixing `hi = mid - 1` with `lo = mid` can cause infinite loops.
+> - **Integer overflow in mid** — always use `mid = lo + (hi - lo) / 2` instead of `(lo + hi) / 2`.
+> - **Assuming monotonicity without proof** — not every problem is monotonic. Test small examples: does "possible at X" imply "possible at X+1"? If not, binary search on answer won't work.
+> - **Wrong binary search in rotated arrays** — after checking which half is sorted, verify the target is in that range using both boundary comparisons. Skipping the range check misses the target even in the sorted half.
+> - **Ternary search on non-unimodal functions** — ternary search only works for strictly unimodal functions (single peak/valley, no plateaus). Use binary search instead when unsure.
+
+> [!question]- Q: What makes a problem suitable for Binary Search on Answer?
+> **Answer:** A monotonic predicate: "if X works, then all values > X also work" (or "< X"). Classic examples: can you finish eating by time T? If yes at speed 10, you can also finish at speeds 11, 12, etc. This monotonicity lets you binary search the answer directly.
+
+> [!question]- Q: How is binary search in a rotated sorted array different from normal binary search?
+> **Answer:** After computing the midpoint, you check **which half is sorted** (left half if `A[lo] <= A[mid]`, right half otherwise). Then check if the target falls within that sorted half. If yes, search that half; otherwise, search the other. Still O(log n), but with an extra conditional.
+
+> [!question]- Q: When does Ternary Search make sense over Binary Search?
+> **Answer:** Only for **unimodal** functions — finding the minimum/maximum of a parabola-like curve. Binary search works on monotonic predicates; ternary search works when the function increases then decreases (or vice versa). In practice, ternary search is rare — most "find peak" problems are solved with binary search comparing A[mid] with A[mid+1].
+
+> [!question]- Q: Why use `while (lo < hi)` vs `while (lo <= hi)`?
+> **Answer:** `while (lo < hi)` converges to a single element (the answer) and works well for "find minimum feasible value" problems. `while (lo <= hi)` is better for "does element exist?" problems. The key is that `lo < hi + mid=lo+(hi-lo)/2 + lo=mid+1` won't infinite-loop because mid rounds down, so lo always advances.
+
 ### Resources
 
 - [Binary Search - CP-Algorithms](https://cp-algorithms.com/num_methods/binary_search.html)
@@ -2393,11 +2806,25 @@ FindMedianSorted(A[1 .. n], B[1 .. m]):
 | Non-overlapping intervals | Greedy by end time | O(n log n) |
 | Employee free time | Merge + find gaps | O(n log n) |
 
-### Line Sweep
+> [!warning] Pitfalls
+> - **Sorting by the wrong field** — merging intervals requires sorting by **start time**, but "minimum meeting rooms" requires sorting starts and ends **separately**. Mixing these up gives wrong results.
+> - **Modifying the input array in-place** — intervals are often passed as references; mutating them breaks upstream code. Create a new result list instead of modifying the input.
+> - **Forgetting to handle the last interval** — after merging, the last interval in the sorted list might not be added to results. Always handle the final state outside the loop.
+> - **Overlapping vs touching** — some problems define overlap strictly (`[1,2]` and `[2,3]` don't overlap), others loosely. Clarify whether endpoints touch. For meeting rooms, back-to-back is fine; for conflict detection, it may not be.
+> - **Binary search insert without merging** — inserting an interval into a sorted list and then merging is O(n log n). It's better to merge inline in O(n) by finding the insertion point and merging overlapping neighbors in one pass.
+> - **Line sweep with open/close events** — interval start events should be processed before end events when they share the same timestamp, otherwise you may count an extra overlap that doesn't exist.
 
-- Process events (start/end points) in sorted order
-- Maintain active set
-- Used for: interval scheduling, rectangle union area, skyline problem
+> [!question]- Q: What's the standard pattern for merging overlapping intervals?
+> **Answer:** Sort by start time. Initialize `result = [intervals[0]]`. For each remaining interval, compare with `result.last()`. If overlapping (`interval.start <= last.end`), extend `last.end = max(last.end, interval.end)`. Otherwise, push the new interval. O(n log n) due to sorting.
+
+> [!question]- Q: What's the difference between Interval Scheduling and Interval Partitioning?
+> **Answer:** **Scheduling** = pick the maximum number of non-overlapping intervals (greedy: sort by end time). **Partitioning** = find the minimum number of resources/rooms needed (line sweep: track max concurrent intervals). They have different goals and different solutions.
+
+> [!question]- Q: How do you handle the "insert interval" problem efficiently?
+> **Answer:** Since intervals are already sorted and non-overlapping, scan to find the insertion point. Add all intervals that end before the new one starts. Then merge any overlapping ones. Then add the rest. O(n) total, no need to sort.
+
+> [!question]- Q: Why does Meeting Rooms II work by sorting starts and ends separately?
+> **Answer:** You process events in chronological order. A start event means a new room is needed; an end event means a room frees up. The max number of simultaneous meetings equals the max difference between starts and ends processed. This is effectively a line sweep.
 
 ### Pseudocode
 
@@ -2442,6 +2869,43 @@ InsertInterval(intervals[1 .. n], newInterval):   // intervals sorted, no overla
 
 ## 15. Randomized Algorithms
 
+> [!summary] Intuition
+> Randomized algorithms use a **coin flip** somewhere in their logic. Instead of always picking the best or middle element, they roll the dice. This randomness breaks pathological worst-case inputs — even if an adversary knows your algorithm, they can't craft a worst-case input because the algorithm's behavior changes each run. Think of Random QuickSort: by picking a random pivot, no particular input can force O(n²) every time; the expected time is always O(n log n).
+
+```mermaid
+flowchart TD
+    subgraph Monty["Monte Carlo vs Las Vegas"]
+        MC["Monte Carlo: Fast, may be wrong (small error prob)\nExample: Miller-Rabin primality test"]
+        LV["Las Vegas: Always correct, random runtime\nExample: Randomized QuickSort"]
+    end
+    subgraph QS["Randomized QuickSort"]
+        Q1["Pick random pivot = 4"] --> Q2["Partition: left ≤ 4, right > 4"]
+        Q2 --> Q3["Recursively sort left and right"]
+        Q3 --> Q4["Expected: O(n log n)\nWorst: O(n²) with tiny probability"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Technique |
+|-----------------|-----------|
+| Need O(n) selection from unsorted data | Randomized QuickSelect |
+| Stream of unknown length, need random sample | Reservoir Sampling |
+| Generate random permutation | Fisher-Yates Shuffle |
+| Primality test with probabilistic guarantee | Miller-Rabin |
+| Large graph min-cut problem | Karger's Randomized Min-Cut |
+| Avoid adversarial worst-case in sorting/selection | Random pivot selection |
+| Hash-based data structures with collisions | Universal hashing / randomized hash |
+
+### Two Key Flavors
+
+| Type | Correctness | Runtime | Example |
+|------|:---:|:---:|---------|
+| **Monte Carlo** | Always fast | May be wrong (bounded error probability) | Miller-Rabin, Karger's Min-Cut |
+| **Las Vegas** | Always correct | Random (expected bound, rare worst-case) | Randomized QuickSort, QuickSelect |
+
+### Algorithms
+
 | Algorithm | Purpose | Expected Time |
 |-----------|---------|:---:|
 | **Randomized QuickSort** | Sorting | O(n log n) |
@@ -2453,6 +2917,16 @@ InsertInterval(intervals[1 .. n], newInterval):   // intervals sorted, no overla
 | **Skip List** | Probabilistic balanced search | O(log n) avg |
 | **Randomized Min Cut** | Karger's algorithm | O(n^2 log n) |
 | **Miller-Rabin** | Primality testing | O(k log^2 n) |
+| **Randomized Treap** | BST with random priorities | O(log n) avg |
+| **Bloom Filter** | Probabilistic set membership | O(k) |
+
+### Why Randomization Helps
+
+- **Avoids adversarial inputs** — worst-case inputs can't target a random pivot
+- **Average-case becomes guaranteed** — the expectation holds regardless of input
+- **Simpler than deterministic equivalents** — Randomized QuickSelect is much simpler than Median of Medians
+- **Amplification by repetition** — running Miller-Rabin k times makes error probability ≤ (1/4)^k
+- **Uniform sampling from streams** — Reservoir Sampling gives each element equal probability without knowing stream length
 
 ### Reservoir Sampling
 
@@ -2487,6 +2961,26 @@ RandomizedQuickSelect(A[1 .. n], k):
     return A[lo]
 ```
 
+> [!warning] Pitfalls
+> - **Non-uniform randomness** — using `Random(0, n-1)` in Fisher-Yates at step `i=n-1` instead of `Random(0, i)` produces biased permutations. Each element must have exactly `1/n!` probability.
+> - **Seeding issues** — using the system clock as a seed in competitive programming causes predictable/poor-quality randomness. Use `std::random_device` (C++) or `java.security.SecureRandom` when quality matters.
+> - **Assuming Monte Carlo error bounds hold for all inputs** — Miller-Rabin's 1/4 error per round is a worst-case bound, but for most composites the error is much smaller. Still, for cryptographic use, deterministic Miller-Rabin variants are preferred.
+> - **Reservoir sampling with incorrect probability** — the correct selection probability at step `i` is `k/i` (replace with probability k/i). Using `1/k` or `1/n` gives biased samples.
+> - **Not accounting for expected vs worst case** — a randomized algorithm with expected O(n log n) can still hit O(n²). While extremely unlikely (probability ~1/n! for naive QuickSort), it's possible. Have a fallback.
+> - **Re-running for probabilistic guarantees without analysis** — running Karger's Min-Cut once gives success probability ~1/n². You need O(log n) repetitions for high confidence. Know your probability bounds.
+
+> [!question]- Q: What's the difference between Monte Carlo and Las Vegas algorithms?
+> **Answer:** **Monte Carlo** = fixed runtime, may produce wrong answer (with bounded error probability). Example: Miller-Rabin may falsely say a composite is prime. **Las Vegas** = always produces correct answer, but runtime is random. Example: Randomized QuickSort always sorts correctly, but may be slower on unlucky pivots.
+
+> [!question]- Q: Why is Randomized QuickSelect preferred over Median of Medians?
+> **Answer:** Randomized QuickSelect is O(n) expected, with simple implementation (just pick a random pivot and partition). Median of Medians is deterministic O(n), but has large constant factors and complex implementation. In practice, the random version is faster and the worst-case probability is negligible.
+
+> [!question]- Q: How does Reservoir Sampling give every element equal probability?
+> **Answer:** When the ith element arrives (i > k), it's selected with probability k/i. If selected, it replaces a random element from the reservoir (each with probability 1/k). By induction, after processing n elements, every element has probability k/n of being in the final sample.
+
+> [!question]- Q: When would you use randomized algorithms in production?
+> **Answer:** Load balancing (random assignment), A/B testing (random sampling), cryptographic nonces, database query optimization (random sampling for cardinality estimation), distributed consensus (random backoff), and anytime you need to break symmetry without central coordination.
+
 ### Resources
 
 - [Randomized Algorithms - GeeksforGeeks](https://www.geeksforgeeks.org/randomized-algorithms/)
@@ -2495,6 +2989,48 @@ RandomizedQuickSelect(A[1 .. n], k):
 ---
 
 ## 16. Computational Geometry
+
+> [!summary] Intuition
+> Computational geometry is about answering spatial questions efficiently: "Do these lines intersect?" "What's the smallest polygon containing these points?" "Is this point inside that shape?" The key insight is that **cross product** encodes direction (left turn vs right turn), and **sorting by angle** transforms an unordered set of points into an ordered path that reveals convex structure.
+
+```mermaid
+flowchart TD
+    subgraph CH["Convex Hull: Graham Scan"]
+        H1["Input: scattered points"] --> H2["Find lowest-leftmost point as pivot"]
+        H2 --> H3["Sort all points by polar angle around pivot"]
+        H3 --> H4["Walk sorted points — keep only left turns"]
+        H4 --> H5["Right turn → pop from stack (it's inside)"]
+        H5 --> H6["Result: convex polygon containing all points"]
+    end
+    subgraph Orient["Orientation via Cross Product"]
+        O1["cross(o,a,b) > 0: a→b is LEFT turn (counter-clockwise)"]
+        O2["cross(o,a,b) < 0: a→b is RIGHT turn (clockwise)"]
+        O3["cross(o,a,b) = 0: collinear"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Likely Algorithm |
+|-----------------|-----------------|
+| "Find boundary/envelope of points" | Convex Hull (Graham Scan / Jarvis March) |
+| "Do these line segments intersect?" | Orientation + bounding box check |
+| "Is point inside polygon?" | Ray Casting or Winding Number |
+| "Find closest pair among points" | Divide & Conquer (Closest Pair) |
+| "Rectangle overlap / union area" | Line Sweep |
+| "Compute polygon area" | Shoelace Formula |
+| "Point on which side of a line?" | Cross Product |
+
+### Key Primitives
+
+| Primitive | Formula / Method | Purpose |
+|-----------|-----------------|---------|
+| **Cross Product** | `(a.x-o.x)*(b.y-o.y) - (a.y-o.y)*(b.x-o.x)` | Orientation (left/right/collinear) |
+| **Dot Product** | `a.x*b.x + a.y*b.y` | Angle, projection, perpendicular check |
+| **Distance** | Euclid: `√(dx² + dy²)` — avoid sqrt when comparing | Closest pair, proximity |
+| **Line Intersection** | Orientation check: (p1,q1,p2) × (p1,q1,q2) | Segment intersection test |
+| **Point in Polygon** | Ray casting: count crossing edges | Membership test |
+| **Shoelace Formula** | `½ * |Σ(x_i*y_{i+1} - x_{i+1}*y_i)|` | Polygon area |
 
 ### Basic Concepts
 
@@ -2515,6 +3051,36 @@ RandomizedQuickSelect(A[1 .. n], k):
 | **Line Intersection** | Do two line segments intersect? | O(1) |
 | **Point in Polygon** | Is point inside polygon? (ray casting) | O(n) |
 | **Sweep Line** | Various geometric problems | O(n log n) |
+
+> [!summary] Intuition
+> Intervals represent **spans** — time ranges, segments, or events with start and end points. The two most important realizations: (1) **sorting by start or end time** unlocks greedy and merge algorithms, and (2) **line sweep** (processing events in chronological order) converts overlapping intervals into a counting problem on points. Almost every interval problem reduces to: sort the events, then walk through them maintaining some state.
+
+```mermaid
+flowchart TD
+    subgraph Merge["Merge Overlapping Intervals"]
+        M1["Input: [1,3],[2,6],[8,10],[15,18]"] --> M2["Sort by start: same order"]
+        M2 --> M3["[1,3] vs [2,6]: 2 ≤ 3 → merge → [1,6]"]
+        M3 --> M4["[1,6] vs [8,10]: 8 > 6 → push [1,6], start new"]
+        M4 --> M5["[8,10] vs [15,18]: 15 > 10 → push [8,10]"]
+        M5 --> M6["Result: [1,6], [8,10], [15,18]"]
+    end
+    subgraph Rooms["Meeting Rooms II: Line Sweep"]
+        R1["Events: +1 at starts, -1 at ends"] --> R2["Walk chronologically"]
+        R2 --> R3["Track current count → max = answer"]
+    end
+```
+
+### How to Recognize
+
+| Problem Pattern | Interval Technique |
+|-----------------|-------------------|
+| "Merge / flatten overlapping ranges" | Sort by start, merge |
+| "Maximum concurrent events/meetings" | Line sweep (sort starts and ends separately) |
+| "Insert an interval into sorted list" | Linear scan + merge in one pass |
+| "Find gaps / free time between intervals" | Merge all, then scan for gaps |
+| "Schedule non-overlapping intervals" | Greedy by finish time (Activity Selection) |
+| "Minimum removals for no overlap" | Greedy by end time, count removals |
+| "Rectangle overlap / skyline problem" | Line sweep + Segment Tree / priority queue |
 
 ### Pseudocode
 
@@ -2555,6 +3121,26 @@ PointInPolygon(polygon[1 .. n], point):
                 count ← count + 1
     return count mod 2 = 1
 ```
+
+> [!warning] Pitfalls
+> - **Integer overflow in cross product** — `(a.x-o.x)*(b.y-o.y) - (a.y-o.y)*(b.x-o.x)` can overflow 32-bit integers even for coordinates within ±10^4. Use 64-bit (`long long`) or Python's arbitrary precision.
+> - **Collinear points in convex hull** — Graham Scan with `≤ 0` in the while condition keeps collinear points on the hull border. With `< 0`, it keeps only the extreme points. Know which variant you need.
+> - **Polar angle sorting with duplicates** — points at the same angle must be sorted by distance. Otherwise the algorithm may add the farther point first and then remove the closer one, breaking the hull.
+> - **Ray casting edge cases** — rays passing exactly through vertices or being collinear with edges require careful handling. Use a small random offset or the "crossing number" algorithm with strict inequality checks.
+> - **Comparing floating-point distances** — avoid `sqrt()` when comparing distances; compare squared distances instead. Floating-point imprecision can break tie-breaking in closest-pair algorithms.
+> - **Assuming the shortest distance is between adjacent sorted points** — in closest-pair, the strip check must consider up to 7 points in the y-sorted band, not just 1 or 2. The bound is proven: at most 6 points can fit in a d×2d rectangle without violating the minimum distance.
+
+> [!question]- Q: What does the cross product actually tell you?
+> **Answer:** The cross product `(b-a) × (c-a)` is signed area of the parallelogram. Positive = counter-clockwise turn (left), negative = clockwise (right), zero = collinear. It's the geometric equivalent of comparing slopes without division.
+
+> [!question]- Q: When would you use Jarvis March over Graham Scan?
+> **Answer:** Jarvis March (Gift Wrapping) is O(n*h) where h is the number of hull points. When the hull has very few points (h << n), Jarvis March is faster. Graham Scan is always O(n log n). Use Jarvis March when you expect a small convex hull.
+
+> [!question]- Q: Why is the Shoelace formula useful?
+> **Answer:** It computes the area of any simple polygon given its vertices in order, in O(n) time. The formula `½ * |Σ(x_i*y_{i+1} - x_{i+1}*y_i)|` handles convex and concave polygons equally well. Useful for geometric DP, area-based scoring, and polygon manipulation.
+
+> [!question]- Q: How do you check if two line segments intersect?
+> **Answer:** Check orientation of both endpoints of one segment relative to the other: `orient(p1,q1,p2) ≠ orient(p1,q1,q2)` AND `orient(p2,q2,p1) ≠ orient(p2,q2,q1)`. Additionally handle collinear cases with bounding box checks. O(1) per pair.
 
 ### Resources
 
@@ -2662,6 +3248,26 @@ DinicDFS(u, sink, flow, level, ptr):
     return 0
 ```
 
+> [!warning] Pitfalls
+> - **Infinite loop in Ford-Fulkerson with irrational capacities** — DFS-based augmenting path can pick infinitely smaller paths when capacities are irrational. Edmonds-Karp (BFS) and Dinic's guarantee termination with integer capacities.
+> - **DFS-based max flow on large graphs** — DFS can select a single long augmenting path, leading to O(E * max_flow) runtime. Always use BFS (Edmonds-Karp) or Dinic's when max_flow is large.
+> - **Forgetting residual capacity updates** — both `capacity[u][v] -= flow` AND `capacity[v][u] += flow` must be updated. The reverse edge allows flow to be "undone" later. Missing the reverse update breaks the algorithm.
+> - **Using max flow for min cut without capacity tracking** — after computing max flow, the min cut is the set of vertices reachable from the source in the **residual graph** (edges with capacity > 0). Using the original graph gives the wrong cut.
+> - **Bipartite matching: forgetting to add source/sink edges** — max bipartite matching requires a super-source connected to all left vertices and a super-sink from all right vertices, all with capacity 1. Without these, max flow won't find the matching.
+> - **Integer vs double capacities** — network flow algorithms assume integer capacities to guarantee termination. With floating-point capacities, the flow increments can become arbitrarily small and the algorithm may never converge.
+
+> [!question]- Q: What's the difference between Ford-Fulkerson, Edmonds-Karp, and Dinic's?
+> **Answer:** **Ford-Fulkerson** uses DFS to find any augmenting path → O(E * max_flow), can loop forever with irrational capacities. **Edmonds-Karp** uses BFS to find the shortest augmenting path → O(V * E²), guaranteed termination. **Dinic's** uses BFS for level graph + DFS for blocking flow → O(V² * E), the fastest general-purpose max flow algorithm.
+
+> [!question]- Q: What is the Max-Flow Min-Cut Theorem?
+> **Answer:** In any flow network, the **maximum flow** from source to sink equals the **minimum cut capacity** (sum of capacities of edges crossing from the source side to the sink side). After running max flow, the min cut is: all vertices reachable from the source in the residual graph. This duality is fundamental.
+
+> [!question]- Q: How do you use max flow for bipartite matching?
+> **Answer:** Create a source connected to all left-side nodes (capacity 1), and a sink connected from all right-side nodes (capacity 1). Each edge between left and right has capacity 1. Max flow = maximum matching. The matched edges are those with flow = 1.
+
+> [!question]- Q: When is Dinic's algorithm particularly fast?
+> **Answer:** Dinic's runs in O(min(V^(2/3), √E) * E) on unit-capacity networks (like bipartite matching), making it O(E√V). It's also O(V²E) generally, which beats Edmonds-Karp's O(VE²) on dense graphs. In practice, Dinic's is the go-to max flow implementation.
+
 ### Resources
 
 - [Network Flow - CP-Algorithms](https://cp-algorithms.com/graph/edmonds_karp.html)
@@ -2700,7 +3306,7 @@ DinicDFS(u, sink, flow, level, ptr):
 | **Parameterized algorithms** | FPT: O(f(k) * n^c) where k is a parameter |
 | **Special cases** | Exploit structure (e.g., tree decomposition) |
 | **Randomized** | Monte Carlo, Las Vegas approaches |
-| **Branch and Bound** | Prune search space with bounds |
+| **Branch and Bound** | Prune search space with bounds (see [[#19-branch-and-bound|dedicated section]]) |
 
 ### Pseudocode
 
@@ -2729,6 +3335,25 @@ TreeVertexCover(root):
     return (incl, excl)
 ```
 
+> [!warning] Pitfalls
+> - **Confusing NP-Hard with NP-Complete** — NP-Complete = NP-Hard + in NP (verifiable in polynomial time). NP-Hard problems may not even be in NP (e.g., TSP optimization, halting problem). Know the distinction for interviews.
+> - **Approximation ratio misconceptions** — a 2-approximation for minimization means the algorithm's solution is at most 2× OPT. For maximization, the ratio is inverted (≥ OPT/2). Mixing these up reverses the interpretation.
+> - **Using exponential algorithms for "small" n** — n=20 with O(2^n) is ~10^6 operations (fine). n=40 with O(2^n) is ~10^12 (too slow). Don't assume exponential is always tractable — check the input constraints.
+> - **Heuristics without bounds** — simulated annealing, genetic algorithms, and hill climbing are heuristics — they find good solutions fast but with NO guarantee on optimality. Don't present them as algorithms with provable quality in an academic context.
+> - **Reducing to the wrong problem** — to prove problem A is NP-Hard, you reduce a known NP-Complete problem B **to** A, not the other way. B → A means "if we could solve A, we could solve B." Getting the direction wrong invalidates the proof.
+
+> [!question]- Q: What does it mean for a problem to be NP-Complete?
+> **Answer:** A problem is NP-Complete if: (1) it is in NP (a solution can be verified in polynomial time), and (2) every problem in NP can be reduced to it in polynomial time (it is NP-Hard). If you solve any NP-Complete problem in polynomial time, you solve ALL problems in NP (P = NP).
+
+> [!question]- Q: What's a polynomial-time reduction?
+> **Answer:** A transformation from problem A to problem B such that: (1) the transformation takes polynomial time, (2) a solution to B can be converted to a solution to A. If B is solvable, A is solvable. Reductions are the primary tool for proving NP-Completeness.
+
+> [!question]- Q: What's the difference between an approximation algorithm and a heuristic?
+> **Answer:** **Approximation algorithm**: provable bound on solution quality (e.g., "at most 2× optimal") and polynomial runtime. **Heuristic**: no provable bound — it might find terrible solutions in worst cases, but works well in practice (e.g., greedy for TSP, local search).
+
+> [!question]- Q: What are practical strategies for dealing with NP-Hard problems?
+> **Answer:** (1) Use an approximation algorithm with a bounded ratio. (2) Parameterize — treat some parameter k as small, use O(f(k) * n^c) FPT algorithms. (3) Exploit structure — the problem may be polynomial on trees/interval graphs/planar graphs. (4) Branch and Bound for exact solutions on manageable instances. (5) Heuristics + local search for large instances where optimality isn't critical.
+
 ### Resources
 
 - *CLRS* — Chapter 34
@@ -2736,6 +3361,314 @@ TreeVertexCover(root):
 
 ---
 
+## 19. Branch and Bound
+
+```mermaid
+flowchart TD
+    subgraph TSP["TSP Branch and Bound (4 cities)"]
+        N0["Root: path=[1], cost=0, bound=14"] --> N1["path=[1,2], cost=10, bound=17"]
+        N0 --> N2["path=[1,3], cost=15, bound=15"]
+        N0 --> N3["path=[1,4], cost=8, bound=14"]
+        N1 --> N4["path=[1,2,3], cost=25, bound=25"]
+        N1 --> N5["path=[1,2,4], cost=19, bound=19"]
+        N3 --> N6["path=[1,4,2], cost=18, bound=18"]
+        N3 --> N7["path=[1,4,3], cost=22, bound=22"]
+        N7 --> N8["path=[1,4,3,2,1], cost=32 ✓ BEST"]
+    end
+    subgraph Knap["0/1 Knapsack B&B (W=10, items sorted by v/w)"]
+        K0["Root: level=0, profit=0, weight=0, bound=$10.20"] --> K1["Include item1: profit=$4, wt=4, bound=$9.60"]
+        K0 --> K2["Exclude item1: profit=$0, wt=0, bound=$8.40"]
+        K1 --> K3["Include item2: profit=$7, wt=8, bound=$9.10"]
+        K1 --> K4["Exclude item2: profit=$4, wt=4, bound=$7.60"]
+        K3 --> K5["Include item3: wt=13 > 10 → PRUNED ✗"]
+        K3 --> K6["Exclude item3: profit=$7, wt=8, bound=$7.00 (leaf ✓)"]
+    end
+    style N8 fill:#2d6,stroke:#090,color:#fff
+    style K6 fill:#2d6,stroke:#090,color:#fff
+    style K5 fill:#c44,stroke:#900,color:#fff
+```
+
+> [!summary] Branch and Bound
+> Branch and Bound is a systematic state-space search for combinatorial optimization. It **branches** (generates subproblems) and **bounds** (computes optimistic estimates) to prune unpromising regions. Unlike backtracking, B&B explicitly tracks an **incumbent** (best solution so far) and abandons any partial solution whose best possible completion is worse than the incumbent.
+
+### Intuition (Plain English)
+
+Imagine you're searching for the cheapest flight route through 20 cities. You've already found one route costing $1,500. Now, before fully exploring another partial route that already costs $1,200 and still has 15 cities left, you estimate the absolute minimum it could cost in total — say $200 for the remaining cities. Best case: $1,400. Since $1,400 < $1,500, you keep exploring. But if the partial cost was $1,450 with a minimum remaining of $200 (best case $1,650), you'd **prune** that branch immediately — it can never beat $1,500.
+
+That's the core idea: **use bounds to avoid exploring branches that can't improve on what you already have**.
+
+### Key Concepts
+
+| Term | Meaning |
+|------|---------|
+| **State Space Tree** | The tree of all partial solutions; each node = one subproblem |
+| **Live Node** | Generated but not yet fully explored |
+| **E-Node** | The node **currently** being expanded (branched from) |
+| **Dead Node** | Fathomed: bound worse than incumbent, infeasible, or fully explored |
+| **Bounding Function** | Computes an optimistic estimate of the best completion from a partial solution |
+| **Incumbent** | The best complete solution found so far (global upper bound for minimization, lower bound for maximization) |
+| **Pruning / Fathoming** | Killing a node because it cannot lead to a better solution than the incumbent |
+
+### Branch and Bound vs Backtracking vs Dynamic Programming
+
+| Aspect | Branch and Bound | Backtracking | Dynamic Programming |
+|--------|:---:|:---:|:---:|
+| **Goal** | Optimization (min/max with constraints) | Feasibility / enumeration (all solutions or one) | Optimization with overlapping subproblems |
+| **State space** | Explicit tree with bounds | Implicit tree (constraint-driven) | Table of subproblem solutions |
+| **Pruning mechanism** | Bounding function vs incumbent | Constraint checks, symmetry breaking | Overlap avoidance via memoization |
+| **Search order** | LC (best-bound first) or FIFO/LIFO | DFS (depth-first) by default | Bottom-up or top-down |
+| **Optimality guarantee** | Yes (given admissible bounds) | Not applicable (enumeration) | Yes (if optimal substructure holds) |
+| **Memory** | Moderate to high (live node queue) | Low (recursion stack) | High (table, often O(n*m)) |
+| **Classic problems** | 0/1 Knapsack, TSP, 15-puzzle, job assignment | N-Queens, Sudoku, permutations, subsets | Fibonacci, LCS, matrix chain, coin change |
+| **Works when** | Bounding function exists and is tight | Constraints prune early | Optimal substructure + overlapping subproblems |
+
+### Variants of Branch and Bound
+
+| Variant | Data Structure | Expansion Strategy | Best For |
+|---------|:---:|---------|----------|
+| **FIFO** (BFS-based) | Queue | First-come, first-served; level-by-level | Guarantees shallow solutions; simple to implement |
+| **LIFO** (DFS-based) | Stack | Go deep fast; find an incumbent quickly | Memory efficient; good when any solution helps prune |
+| **LC-Branch and Bound** (Best-first) | Priority Queue (min/max heap) | Expand node with best (lowest) bound first | Most common in practice; reaches optimal fastest |
+
+> [!tip] LC-Branch and Bound is the workhorse
+> In almost all real-world implementations, you use a **priority queue** ordered by bound. The node with the most promising bound gets expanded next. This tends to find a good incumbent early and prune heavily.
+
+### How to Recognize a Branch and Bound Problem
+
+| You see... | Consider B&B when... |
+|------------|----------------------|
+| "Minimize cost / maximize profit with constraints" | The state space is exponential, but you can compute a bound |
+| "Find the optimal assignment / schedule / route" | Multiple possible choices at each step |
+| "Combinatorial optimization" — TSP-like patterns | Greedy is suboptimal, DP table is too large (e.g., O(2^n)) |
+| "NP-Hard optimization" trade-off problems | You need the exact optimum, not an approximation |
+| Problem has a natural sorting (by value/weight, by benefit) | Sorting gives you a tight fractional (continuous) bound |
+
+### Classic Problems
+
+| Problem | Description | Bounding Function | Complexity (worst case) |
+|---------|-------------|-------------------|:---:|
+| **0/1 Knapsack (B&B)** | Maximize value with weight limit | Fractional knapsack on remaining items | O(2^n) worst, much faster in practice |
+| **Travelling Salesman (TSP)** | Min-cost tour visiting all cities once | Reduced cost matrix (row/column reduction) | O(n!) worst, practical for n≤40-60 |
+| **15-Puzzle** | Slide tiles to reach goal configuration | Manhattan distance + linear conflicts | Exponential, practical for most instances |
+| **N-Queens (B&B)** | Place N queens with no attacks | Row/column constraint propagation | Faster than pure backtracking |
+| **Job Assignment** | Assign N workers to N jobs at min cost | Row/column reduction of cost matrix | O(n!) worst, bounded |
+| **Graph Coloring (B&B)** | Color graph with k colors | Number of colors used so far + saturation degree | Exponential |
+| **Subset Sum (B&B)** | Does a subset sum to target? | Remaining sum bounds | O(2^n) worst |
+
+### Bounding Function Design
+
+The **tighter** the bound, the more pruning — but computing the bound must be **fast**. There's a trade-off:
+
+| Bound Type | Tightness | Compute Cost | Example |
+|------------|:---:|:---:|---------|
+| **Trivial bound** | Loose | O(1) | "Remaining items have zero weight" |
+| **Fractional / continuous relaxation** | Moderate | O(n log n) | 0/1 Knapsack → fractional knapsack on remainder |
+| **Problem-specific heuristic** | Tight | O(n) or O(n log n) | TSP: row/column reduction of cost matrix |
+| **Lagrangian relaxation** | Very tight | O(m * log n) | Relax constraints, solve easier subproblem |
+| **LP relaxation** | Tight | Polynomial (simplex) | Integer programming → solve as LP |
+
+> [!warning] The bounding function must be **admissible**
+> For minimization: bound must be a **lower bound** (underestimate) on the cost from this partial solution. For maximization: an **upper bound** (overestimate). A non-admissible bound may prune the optimal solution.
+
+### Pseudocode
+
+#### Generic B&B Template (LC - Least Cost)
+
+```
+BranchAndBound(initialProblem):
+    pq ← MinPriorityQueue ordered by lowerBound (or MaxPQ for maximization)
+    incumbent ← +∞  (or -∞ for maximization)
+    bestSolution ← NIL
+    root ← createNode(initialProblem)
+    root.bound ← computeBound(root)
+    pq.insert(root)
+
+    while pq is not empty:
+        current ← pq.extractMin()     # most promising node first
+
+        if current.bound ≥ incumbent:  # cannot beat incumbent
+            continue                    # PRUNE — skip this node
+
+        if isLeaf(current):
+            value ← evaluate(current)
+            if value < incumbent:
+                incumbent ← value
+                bestSolution ← current
+            continue
+
+        # BRANCH: generate children
+        for each choice in getChoices(current):
+            child ← extend(current, choice)
+            if not feasible(child):
+                continue
+            child.bound ← computeBound(child)
+            if child.bound < incumbent:    # promising
+                pq.insert(child)
+
+    return (incumbent, bestSolution)
+```
+
+#### 0/1 Knapsack — Branch and Bound
+
+```
+KnapsackB&B(items[1 .. n], capacity):
+    # Sort items by value/weight ratio descending
+    Sort items by (value/weight) descending
+    pq ← MaxPriorityQueue ordered by upperBound (profit + fractional remainder)
+    incumbent ← -∞
+    bestSubset ← NIL
+
+    root.bound ← fractionalKnapsackRemaining(items, 0, 0, capacity)
+    pq.insert(root)
+
+    while pq is not empty:
+        node ← pq.extractMax()
+        if node.bound ≤ incumbent:
+            continue                              # prune
+
+        if node.level = n or node.weight = capacity:
+            if node.profit > incumbent:
+                incumbent ← node.profit
+                bestSubset ← node.choices
+            continue
+
+        # Branch: INCLUDE next item
+        if node.weight + items[node.level + 1].weight ≤ capacity:
+            incl ← createInclude(node, items[node.level + 1])
+            incl.bound ← incl.profit + fractionalKnapsackRemaining(
+                items, incl.level + 1, incl.weight, capacity)
+            if incl.bound > incumbent:
+                pq.insert(incl)
+
+        # Branch: EXCLUDE next item
+        excl ← createExclude(node, items[node.level + 1])
+        excl.bound ← excl.profit + fractionalKnapsackRemaining(
+            items, excl.level + 1, excl.weight, capacity)
+        if excl.bound > incumbent:
+            pq.insert(excl)
+
+    return (incumbent, bestSubset)
+
+fractionalKnapsackRemaining(items, start, currentWeight, capacity):
+    remainingCapacity ← capacity - currentWeight
+    profit ← 0
+    for i ← start to n:
+        if items[i].weight ≤ remainingCapacity:
+            profit ← profit + items[i].value
+            remainingCapacity ← remainingCapacity - items[i].weight
+        else:
+            profit ← profit + items[i].value * (remainingCapacity / items[i].weight)
+            break
+    return profit
+```
+
+#### TSP — Branch and Bound
+
+```
+TSPB&B(cost[1 .. n][1 .. n]):
+    # Row reduction + column reduction to get initial lower bound
+    reducedCost ← reduceMatrix(cost)
+    pq ← MinPriorityQueue ordered by lowerBound
+    incumbent ← +∞
+    bestTour ← NIL
+
+    root.path ← [1]              # start at city 1
+    root.bound ← reducedCost.lowerBound
+    pq.insert(root)
+
+    while pq is not empty:
+        node ← pq.extractMin()
+        if node.bound ≥ incumbent:
+            continue
+
+        if node.path.length = n:
+            tourCost ← node.cost + cost[node.path.last][1]   # return to start
+            if tourCost < incumbent:
+                incumbent ← tourCost
+                bestTour ← node.path + [1]
+            continue
+
+        lastCity ← node.path.last
+        for each city i NOT in node.path:
+            child.cost ← node.cost + cost[lastCity][i]
+            child.path ← node.path + [i]
+            child.matrix ← node.matrix with row lastCity, col i set to ∞
+            child.bound ← child.cost + reduceMatrix(child.matrix).lowerBound
+            if child.bound < incumbent:
+                pq.insert(child)
+
+    return (incumbent, bestTour)
+
+reduceMatrix(matrix):
+    lowerBound ← 0
+    # Row reduction
+    for each row r:
+        minVal ← min in row r, excluding ∞
+        if minVal ≠ 0 and minVal ≠ ∞:
+            lowerBound ← lowerBound + minVal
+            subtract minVal from each element in row r
+    # Column reduction
+    for each column c:
+        minVal ← min in column c, excluding ∞
+        if minVal ≠ 0 and minVal ≠ ∞:
+            lowerBound ← lowerBound + minVal
+            subtract minVal from each element in column c
+    return (reducedMatrix, lowerBound)
+```
+
+### B&B Execution Walkthrough (0/1 Knapsack)
+
+Consider: `items = [(wt:4, val:$4), (wt:7, val:$7), (wt:5, val:$5), (wt:3, val:$3)]`, capacity = 10. Sorted by value/weight: (4/4=1.0), (7/7=1.0), (5/5=1.0), (3/3=1.0).
+
+| Step | E-Node | Action | Incumbent | Live Nodes (bound, profit) |
+|------|--------|--------|:---:|---------|
+| 0 | — | Start | -∞ | Root(bound=10.0, p=0) |
+| 1 | Root | Branch | -∞ | Incl1(bound=10.0, p=4), Excl1(bound=9.3, p=0) |
+| 2 | Incl1 | Branch (best bound) | -∞ | Incl1+Incl2: wt=11 > 10 → ✗ (pruned). Incl1+Excl2(bound=9.1, p=4), Excl1(bound=9.3) |
+| 3 | Excl1 | Branch (best bound) | -∞ | Excl1+Incl2(bound=9.3, p=7), Incl1+Excl2(bound=9.1), Excl1+Excl2(bound=6.6) |
+| 4 | Excl1+Incl2 | Branch | -∞ | Excl1+Incl2+Incl3: wt=12 > 10 → ✗. Excl1+Incl2+Excl3(bound=8.0, p=7) |
+| 5 | Incl1+Excl2 | Branch | -∞ | Incl1+Excl2+Incl3(bound=9.5, p=9), Incl1+Excl2+Excl3(bound=7.5, p=4) |
+| 6 | Incl1+Excl2+Incl3 | Leaf (wt=9, p=$9) | **$9** | Excl1+Incl2+Excl3(bound=8.0, p=7), Incl1+Excl2+Excl3(bound=7.5) |
+| 7 | Excl1+Incl2+Excl3 | bound=8.0 < incumbent=$9 → **PRUNE** | $9 | Incl1+Excl2+Excl3(bound=7.5) |
+| 8 | Incl1+Excl2+Excl3 | bound=7.5 < incumbent=$9 → **PRUNE** | $9 | (empty — done) |
+
+**Optimal**: Items 1 + 3 = profit $9, weight 9.
+
+> [!warning] Pitfalls
+> - **Loose bounds kill performance** — a trivial bound (e.g., 0) means you explore the entire state space. Design tight, admissible bounds.
+> - **Branching order matters** — expanding the wrong node first delays finding a good incumbent. Always use LC (best-bound-first) for hard problems.
+> - **Inadmissible bounds** — a bound that overestimates (for minimization) may prune the optimal solution. Double-check your bounding function never crosses the true optimum.
+> - **Memory explosion** — the live-node priority queue can grow to O(2^n) in worst case. Use LIFO (DFS) variant when memory is a concern, accepting slower convergence.
+> - **Not for real-time systems** — B&B has no worst-case time guarantee. It may still explore exponential nodes if bounds are weak.
+> - **Incorrect tie-breaking** — when multiple nodes have the same bound, break ties in favor of deeper nodes or use a consistent heuristic to avoid thrashing.
+> - **Neglecting to update incumbent** — if you don't update the global incumbent when a better solution is found, pruning becomes ineffective and you explore the whole tree.
+> - **Duplicate detection** — some problems generate the same state through different branching paths. Without memoization, B&B will re-explore.
+
+> [!question]- Q: What is the difference between Branch and Bound and Backtracking?
+> **Answer:** Backtracking is for **feasibility/enumeration** (find a solution / all solutions). B&B is for **optimization** (find the best solution). B&B uses a **bounding function** to prune based on optimality, while backtracking prunes based on constraints. B&B also tracks a global **incumbent** (best so far).
+
+> [!question]- Q: What does "admissible bound" mean in B&B?
+> **Answer:** For a minimization problem, the bound must be a **lower bound** — it must always be **less than or equal to** the true optimal cost of completing the partial solution. If the bound ever exceeds the true optimum, it's inadmissible and may cause B&B to discard the optimal branch.
+
+> [!question]- Q: Why use LC (Least Cost) search over FIFO/LIFO?
+> **Answer:** LC expands the node with the **best bound first**, which typically finds a good incumbent early. A good incumbent means aggressive pruning. FIFO may waste time on shallow unpromising nodes; LIFO may go very deep on a bad path. LC is the fastest to converge to the optimum in practice.
+
+> [!question]- Q: How do you design a bounding function for 0/1 Knapsack?
+> **Answer:** Use the **fractional knapsack** greedy solution on remaining items (sorted by value/weight). This is an admissible upper bound for maximization because fractional selection is always at least as good as integer selection. It's cheap to compute (O(k) for k remaining items) and reasonably tight.
+
+> [!question]- Q: When would you use B&B over Dynamic Programming?
+> **Answer:** When the DP state space is too large. For example, TSP with DP has O(n² * 2^n) states — infeasible for n > 25. B&B with a good bound can solve TSP for n=40–60 in practice. Also, when the problem lacks overlapping subproblems (DP's assumption), B&B is the natural choice.
+
+### Resources
+
+- *CLRS* — Chapter 35 (Approximation Algorithms) touches on B&B; detailed coverage in *Horowitz & Sahni* "Fundamentals of Computer Algorithms"
+- *Algorithm Design Manual* (Skiena) — Section 7.7: Branch and Bound
+- [Branch and Bound - GeeksforGeeks](https://www.geeksforgeeks.org/branch-and-bound-algorithm/)
+- [0/1 Knapsack using Branch and Bound](https://www.geeksforgeeks.org/0-1-knapsack-using-branch-and-bound/)
+- [Travelling Salesman Problem using Branch and Bound](https://www.geeksforgeeks.org/traveling-salesman-problem-using-branch-and-bound-2/)
+- [Aditya Verma - Branch and Bound Playlist (YouTube)](https://www.youtube.com/playlist?list=PL_z_8CaSLPWdb4yWx1R7n2PcAq9K5QmhP)
+
+---
 
 ## Interactive Visualization References
 
@@ -2792,13 +3725,14 @@ TreeVertexCover(root):
 14. String Algorithms (KMP, Z, Trie)
 15. Binary Search on Answer
 16. Segment Trees, Fenwick Trees
+17. Branch and Bound
 
 ### Phase 4: Expert (Weeks 13+)
-17. Network Flow
-18. Computational Geometry
-19. Advanced String (Suffix Array, Aho-Corasick)
-20. NP-Completeness & Approximation
-21. DP Optimizations (CHT, D&C optimization)
+18. Network Flow
+19. Computational Geometry
+20. Advanced String (Suffix Array, Aho-Corasick)
+21. NP-Completeness & Approximation
+22. DP Optimizations (CHT, D&C optimization)
 
 ---
 
