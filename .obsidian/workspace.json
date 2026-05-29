@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Java/02_Core/01_Concurrency_Threads_and_Executors.md",
+                "file": "DSA/Algorithms.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "01_Concurrency_Threads_and_Executors"
+              "title": "Algorithms"
             }
           }
         ]
@@ -185,6 +185,7 @@
   },
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
+    "Java/02_Core/01_Concurrency_Threads_and_Executors.md",
     "React/03_Advanced/07_React_Beyond_Web_React_Native_and_Ecosystem.md",
     "React/03_Advanced/06_Security_and_Auth_Patterns_in_React_Apps.md",
     "React/03_Advanced/05_Concurrent_React_Suspense_and_Transitions.md",
@@ -204,7 +205,6 @@
     "Java/01_Foundations/09_Logging_Basics_for_Java.md",
     "Java/01_Foundations/08_Date_Time_and_Money.md",
     "Java/02_Core/02_JVM_Memory_and_GC_Basics.md",
-    "Java/02_Core/01_Concurrency_Threads_and_Executors.md",
     "DSA/Algorithms.md",
     "DSA/DataStructures.md",
     "HttpErrorCodes.md",
