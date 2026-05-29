@@ -2,7 +2,7 @@
 tags: [dsa, data-structures, java]
 aliases: ["DSA Data Structures"]
 status: stable
-updated: 2026-05-27
+updated: 2026-05-29
 ---
 
 # Data Structures - Complete Guide (Beginner to Advanced)
@@ -16,6 +16,19 @@ updated: 2026-05-27
 > - Practice list: [[Questions]]
 
 ---
+### AtCoder Library (ACL) Mapping
+
+| ACL Component | This Vault Topic |
+|---------------|------------------|
+| `dsu` | Union-Find (Disjoint Set) |
+| `fenwick_tree` | Binary Indexed Tree (Fenwick) |
+| `segtree` / `lazysegtree` | Segment Trees (iterative/lazy) |
+| `scc_graph` | Strongly Connected Components |
+| `maxflow` | Max Flow (Dinic/Edmonds-Karp) |
+| `mincostflow` | Min-Cost Max-Flow |
+| `twosat` | 2-SAT (implication graph + SCC) |
+
+Use this table to map AtCoder problems directly to the right DS in these notes and Java templates.
 
 ## Table of Contents
 
@@ -1495,6 +1508,15 @@ LCA(u, v):
     return up[u][0]
 ```
 
+#### Practical usage patterns (CP)
+
+- Subtree queries: Euler tour flattening → `[tin[v], tout[v]]` interval → Fenwick/Segment Tree
+- Path queries (u↔v): HLD → split path into O(log n) chains → segment tree over base array
+- Kth ancestor: binary lifting powers of two
+
+> [!tip] Bridges
+> - `[[#12. Segment Trees]]`, `[[#13. Binary Indexed Trees (Fenwick Trees)]]` for range structures
+
 #### Pseudocode — Common Tree Operations
 
 ##### Diameter of Binary Tree
@@ -1558,6 +1580,97 @@ BuildHelper(pre, preStart, preEnd, in, inStart, inEnd, map):
                               in, rootIndex + 1, inEnd, map)
     return root
 ```
+
+### 7.6 Euler Tour (Tree Flattening)
+
+- Goal: map each subtree of v to a contiguous range [tin[v], tout[v]] in an array.
+- Use DFS to assign entry time `tin[v]` and exit time `tout[v]` while writing v into an order array at `tin[v]`.
+
+```
+timer ← 0
+DFS(v, p):
+    tin[v] ← timer; order[timer] ← v; timer ← timer + 1
+    for u in g[v]:
+        if u ≠ p: DFS(u, v)
+    tout[v] ← timer - 1
+```
+
+- Subtree sum/update → range query/update on `[tin[v], tout[v]]` using Fenwick/Segment Tree.
+
+> [!tip] Bridges
+> - Use `[[#13. Binary Indexed Trees (Fenwick Trees)]]` or `[[#12. Segment Trees]]` over the Euler-order base array.
+> - Java templates: ![[JAVA_IMPL/Java_05_Utilities_Templates#Fast I/O (Competitive Programming)]]
+
+> [!warning] Pitfalls
+> - Off-by-one in `tout[v]` definition; decide inclusive vs exclusive and be consistent.
+> - Mixing 0/1-based indices between DS and Euler arrays.
+
+---
+
+### 7.7 Heavy-Light Decomposition (HLD)
+
+- Decomposes a tree into O(log n) chains so any path u↔v splits into O(log n) segments on chains.
+- Maintain arrays: `parent[]`, `depth[]`, `heavy[]` (child with largest subtree), `head[]` (chain head), `pos[]` (index in base array).
+- Build a segment tree over the base array indexed by `pos[v]`.
+
+```
+// 1) DFS sizes to choose heavy child
+dfs(v, p):
+    parent[v] ← p; size ← 1; best ← 0
+    for u in g[v], u ≠ p:
+        depth[u] ← depth[v] + 1
+        usz ← dfs(u, v)
+        if usz > best: best ← usz; heavy[v] ← u
+        size ← size + usz
+    return size
+
+// 2) Decompose into chains
+decompose(v, h):
+    head[v] ← h; pos[v] ← cur++
+    if heavy[v] ≠ -1:
+        decompose(heavy[v], h)
+        for u in g[v], u ≠ parent[v] and u ≠ heavy[v]:
+            decompose(u, u)
+
+// 3) Path query
+queryPath(u, v):
+    res ← NEUTRAL
+    while head[u] ≠ head[v]:
+        if depth[ head[u] ] < depth[ head[v] ]: swap u, v
+        res ← combine(res, seg.query(pos[ head[u] ], pos[u]))
+        u ← parent[ head[u] ]
+    // now same head
+    if depth[u] > depth[v]: swap u, v
+    res ← combine(res, seg.query(pos[u] + EDGE_OR_NODE_OFFSET, pos[v]))
+    return res
+```
+
+```mermaid
+flowchart TD
+  subgraph Tree
+    A((A)) --heavy--> B((B)) --heavy--> E((E))
+    B --light--> C((C))
+    C --heavy--> F((F))
+  end
+  subgraph Chains
+    H1[Chain 1: A→B→E]
+    H2[Chain 2: C→F]
+  end
+  A -.maps to.-> H1
+  B -.maps to.-> H1
+  E -.maps to.-> H1
+  C -.maps to.-> H2
+  F -.maps to.-> H2
+```
+
+> [!tip] Java templates
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#HLD Skeleton]]
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#LCA (Binary Lifting) Template]]
+
+> [!warning] Pitfalls
+> - Edge vs node values: adjust inclusive ranges with an offset (store edge value at child’s position).
+> - Forgetting to handle the final same-chain segment in `queryPath`.
+> - Not resetting `heavy[] = -1` before DFS when reusing arrays.
 
 ### Common Tree Patterns
 

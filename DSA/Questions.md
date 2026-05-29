@@ -2,7 +2,7 @@
 tags: [dsa, leetcode, practice]
 aliases: ["DSA Questions"]
 status: stable
-updated: 2026-04-26
+updated: 2026-05-29
 ---
 
 # LeetCode Questions - Complete Practice Guide
@@ -767,6 +767,58 @@ Organized by topic, from beginner to advanced. Each section covers a data struct
 | 1856 | [Maximum Subarray Min-Product](https://leetcode.com/problems/maximum-subarray-min-product/) | 🟡 | Monotonic stack + prefix sum |
 
 ---
+
+## Tree Queries (Euler Tour, LCA, HLD)
+
+- Structured set (AtCoder-style):
+  - Subtree sums via Euler tour + Fenwick/Segment tree
+  - Path queries via HLD (sum/min/max on u↔v)
+- Fast/tricky boosters (CF-style):
+  - Mixed path/subtree operations (require careful decomposition)
+- Re-solve checkboxes: [ ] Day 7 [ ] Day 14 [ ] Day 30
+- Mistake journal: invariants for base array mapping; off-by-one in tin/tout; chain boundaries
+
+## Offline Queries (Mo’s, sweep line, sort+BIT)
+
+- Structured set: sort+BIT inversions/kth; sweep line rectangles; Mo’s on frequency queries
+- Fast/tricky boosters: Mo’s with tricky add/remove cost; boundary ties in sweeps
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: tie-breaking in events; compression errors; Mo’s state not reverted correctly
+
+## 2-SAT
+
+- Structured set: clauses modeling, satisfiability, assignment extraction
+- Boosters: edge cases with forced assignments, XOR sets
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: wrong mapping a/¬a; wrong SCC order when assigning
+
+## Min-Cost Max-Flow
+
+- Structured set: min-cost matching/assignment; circulation with demands
+- Boosters: negative edges and potentials; path reconstruction correctness
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: reverse edges costs; overflow; not updating potentials
+
+## Suffix Automaton / Advanced Strings
+
+- Structured set: distinct substrings; occurrences; LCS with SAM
+- Boosters: combining SAM with DP; counting constrained substrings
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: clone logic in SAM; `len`/`link` off-by-one
+
+## DP Optimizations (D&C, Knuth, CHT)
+
+- Structured set: classic problems that admit optimizations
+- Boosters: prove/spot monotone opt / quadrangle inequality
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: applying optimization without proof; wrong transition order
+
+## Convolution (FFT/NTT) (Optional Advanced)
+
+- Structured set: polynomial multiplication tasks; convolution-friendly models
+- Boosters: convolution tricks in substring problems
+- Re-solve: [ ] D7 [ ] D14 [ ] D30
+- Mistakes: rounding (FFT); wrong mod/root selection (NTT)
 
 ## 26. Study Plans and Roadmaps
 

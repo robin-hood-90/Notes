@@ -2,7 +2,7 @@
 tags: [dsa, algorithms, java]
 aliases: ["DSA Algorithms"]
 status: stable
-updated: 2026-05-27
+updated: 2026-05-29
 ---
 
 # Algorithms - Complete Guide (Beginner to Advanced)
@@ -25,6 +25,7 @@ updated: 2026-05-27
 2. [Sorting Algorithms](#2-sorting-algorithms)
 3. [Searching Algorithms](#3-searching-algorithms)
 4. [Recursion and Backtracking](#4-recursion-and-backtracking)
+19. [Branch and Bound](#19-branch-and-bound)
 5. [Divide and Conquer](#5-divide-and-conquer)
 6. [Greedy Algorithms](#6-greedy-algorithms)
 7. [Dynamic Programming](#greedy-vs-dynamic-programming)
@@ -39,7 +40,6 @@ updated: 2026-05-27
 16. [Computational Geometry](#16-computational-geometry)
 17. [Network Flow](#17-network-flow)
 18. [NP-Completeness and Approximation](#18-np-completeness-and-approximation)
-19. [Branch and Bound](#19-branch-and-bound)
 
 ---
 
@@ -59,6 +59,45 @@ flowchart TD
   SP -->|"Negative edges"| BF[Bellman-Ford]
   SP -->|"DAG"| DAGSP["DAG shortest path (Topo + relax)"]
 ```
+
+### Competitive Programming Toolkit (AtCoder + CF)
+
+> [!summary] What this gives you
+> A practical checklist and techniques to reliably turn problems into fast, accepted solutions: transform inputs, pick the right DS, avoid TLE/WA footguns, and structure offline/online queries.
+
+#### Solve Flow
+
+```mermaid
+flowchart LR
+    A[Read input fast] --> B[Normalize / Transform]
+    B --> C[Pick DS/Algo]
+    C --> D[Prove correctness / bounds]
+    D --> E[Implement templates]
+    E --> F[Profile hot spots]
+    F --> G[Print answers fast]
+```
+
+#### Techniques You’ll Reuse Constantly
+- Coordinate compression (map large/scattered values to [1..K])
+- Sort + sweep (events with stable tie-breaking)
+- Prefix/suffix, difference arrays, imos
+- Monotonic stack/queue, deque windows
+- Offline queries (sort + BIT/segtree, Mo’s)
+- Hashing (double hash; validate matches to avoid false positives)
+
+#### TLE/WA Checklist
+- Input and output: avoid per-line `println` in hot loops; use buffered IO
+- Avoid boxing/autoboxing in inner loops; prefer primitives
+- Pre-size arrays/maps; avoid frequent reallocation
+- Avoid recursion in deep trees (10^5) unless tail/stack tuned
+- Check hidden O(n^2) from nested sorts/scans
+- Stable event ordering in sweeps (starts before ends when equal)
+
+#### Recognize When to Go Offline
+- Many range queries with static data → offline via sort + BIT / segtree
+- Range add/remove queries on array → Mo’s algorithm (if updates are rare/none)
+
+---
 
 ## 1. Time and Space Complexity Analysis
 
@@ -769,6 +808,315 @@ Backtrack(A, remain, start, path, result):
 - [Backtracking - GeeksforGeeks](https://www.geeksforgeeks.org/backtracking-algorithms/)
 - [Recursion - Aditya Verma (YouTube)](https://www.youtube.com/playlist?list=PL_z_8CaSLPWeT1ffjiImo0sYTcnLzo-wY)
 - [Backtracking - Striver (YouTube)](https://www.youtube.com/playlist?list=PLgUwDviBIf0p4ozDR_kJJkONnb1wdx2Ma)
+
+---
+
+## 19. Branch and Bound
+
+```mermaid
+flowchart TD
+    subgraph TSP["TSP Branch and Bound (4 cities)"]
+        N0["Root: path=[1], cost=0, bound=14"] --> N1["path=[1,2], cost=10, bound=17"]
+        N0 --> N2["path=[1,3], cost=15, bound=15"]
+        N0 --> N3["path=[1,4], cost=8, bound=14"]
+        N1 --> N4["path=[1,2,3], cost=25, bound=25"]
+        N1 --> N5["path=[1,2,4], cost=19, bound=19"]
+        N3 --> N6["path=[1,4,2], cost=18, bound=18"]
+        N3 --> N7["path=[1,4,3], cost=22, bound=22"]
+        N7 --> N8["path=[1,4,3,2,1], cost=32 ✓ BEST"]
+    end
+    subgraph Knap["0/1 Knapsack B&B (W=10, items sorted by v/w)"]
+        K0["Root: level=0, profit=0, weight=0, bound=$10.20"] --> K1["Include item1: profit=$4, wt=4, bound=$9.60"]
+        K0 --> K2["Exclude item1: profit=$0, wt=0, bound=$8.40"]
+        K1 --> K3["Include item2: profit=$7, wt=8, bound=$9.10"]
+        K1 --> K4["Exclude item2: profit=$4, wt=4, bound=$7.60"]
+        K3 --> K5["Include item3: wt=13 > 10 → PRUNED ✗"]
+        K3 --> K6["Exclude item3: profit=$7, wt=8, bound=$7.00 (leaf ✓)"]
+    end
+    style N8 fill:#2d6,stroke:#090,color:#fff
+    style K6 fill:#2d6,stroke:#090,color:#fff
+    style K5 fill:#c44,stroke:#900,color:#fff
+```
+
+> [!summary] Branch and Bound
+> Branch and Bound is a systematic state-space search for combinatorial optimization. It **branches** (generates subproblems) and **bounds** (computes optimistic estimates) to prune unpromising regions. Unlike backtracking, B&B explicitly tracks an **incumbent** (best solution so far) and abandons any partial solution whose best possible completion is worse than the incumbent.
+
+### Intuition (Plain English)
+
+Imagine you're searching for the cheapest flight route through 20 cities. You've already found one route costing $1,500. Now, before fully exploring another partial route that already costs $1,200 and still has 15 cities left, you estimate the absolute minimum it could cost in total — say $200 for the remaining cities. Best case: $1,400. Since $1,400 < $1,500, you keep exploring. But if the partial cost was $1,450 with a minimum remaining of $200 (best case $1,650), you'd **prune** that branch immediately — it can never beat $1,500.
+
+That's the core idea: **use bounds to avoid exploring branches that can't improve on what you already have**.
+
+### Key Concepts
+
+| Term | Meaning |
+|------|---------|
+| **State Space Tree** | The tree of all partial solutions; each node = one subproblem |
+| **Live Node** | Generated but not yet fully explored |
+| **E-Node** | The node **currently** being expanded (branched from) |
+| **Dead Node** | Fathomed: bound worse than incumbent, infeasible, or fully explored |
+| **Bounding Function** | Computes an optimistic estimate of the best completion from a partial solution |
+| **Incumbent** | The best complete solution found so far (global upper bound for minimization, lower bound for maximization) |
+| **Pruning / Fathoming** | Killing a node because it cannot lead to a better solution than the incumbent |
+
+### Branch and Bound vs Backtracking vs Dynamic Programming
+
+| Aspect | Branch and Bound | Backtracking | Dynamic Programming |
+|--------|:---:|:---:|:---:|
+| **Goal** | Optimization (min/max with constraints) | Feasibility / enumeration (all solutions or one) | Optimization with overlapping subproblems |
+| **State space** | Explicit tree with bounds | Implicit tree (constraint-driven) | Table of subproblem solutions |
+| **Pruning mechanism** | Bounding function vs incumbent | Constraint checks, symmetry breaking | Overlap avoidance via memoization |
+| **Search order** | LC (best-bound first) or FIFO/LIFO | DFS (depth-first) by default | Bottom-up or top-down |
+| **Optimality guarantee** | Yes (given admissible bounds) | Not applicable (enumeration) | Yes (if optimal substructure holds) |
+| **Memory** | Moderate to high (live node queue) | Low (recursion stack) | High (table, often O(n*m)) |
+| **Classic problems** | 0/1 Knapsack, TSP, 15-puzzle, job assignment | N-Queens, Sudoku, permutations, subsets | Fibonacci, LCS, matrix chain, coin change |
+| **Works when** | Bounding function exists and is tight | Constraints prune early | Optimal substructure + overlapping subproblems |
+
+### Variants of Branch and Bound
+
+| Variant | Data Structure | Expansion Strategy | Best For |
+|---------|:---:|---------|----------|
+| **FIFO** (BFS-based) | Queue | First-come, first-served; level-by-level | Guarantees shallow solutions; simple to implement |
+| **LIFO** (DFS-based) | Stack | Go deep fast; find an incumbent quickly | Memory efficient; good when any solution helps prune |
+| **LC-Branch and Bound** (Best-first) | Priority Queue (min/max heap) | Expand node with best (lowest) bound first | Most common in practice; reaches optimal fastest |
+
+> [!tip] LC-Branch and Bound is the workhorse
+> In almost all real-world implementations, you use a **priority queue** ordered by bound. The node with the most promising bound gets expanded next. This tends to find a good incumbent early and prune heavily.
+
+### How to Recognize a Branch and Bound Problem
+
+| You see... | Consider B&B when... |
+|------------|----------------------|
+| "Minimize cost / maximize profit with constraints" | The state space is exponential, but you can compute a bound |
+| "Find the optimal assignment / schedule / route" | Multiple possible choices at each step |
+| "Combinatorial optimization" — TSP-like patterns | Greedy is suboptimal, DP table is too large (e.g., O(2^n)) |
+| "NP-Hard optimization" trade-off problems | You need the exact optimum, not an approximation |
+| Problem has a natural sorting (by value/weight, by benefit) | Sorting gives you a tight fractional (continuous) bound |
+
+### Classic Problems
+
+| Problem | Description | Bounding Function | Complexity (worst case) |
+|---------|-------------|-------------------|:---:|
+| **0/1 Knapsack (B&B)** | Maximize value with weight limit | Fractional knapsack on remaining items | O(2^n) worst, much faster in practice |
+| **Travelling Salesman (TSP)** | Min-cost tour visiting all cities once | Reduced cost matrix (row/column reduction) | O(n!) worst, practical for n≤40-60 |
+| **15-Puzzle** | Slide tiles to reach goal configuration | Manhattan distance + linear conflicts | Exponential, practical for most instances |
+| **N-Queens (B&B)** | Place N queens with no attacks | Row/column constraint propagation | Faster than pure backtracking |
+| **Job Assignment** | Assign N workers to N jobs at min cost | Row/column reduction of cost matrix | O(n!) worst, bounded |
+| **Graph Coloring (B&B)** | Color graph with k colors | Number of colors used so far + saturation degree | Exponential |
+| **Subset Sum (B&B)** | Does a subset sum to target? | Remaining sum bounds | O(2^n) worst |
+
+### Bounding Function Design
+
+The **tighter** the bound, the more pruning — but computing the bound must be **fast**. There's a trade-off:
+
+| Bound Type | Tightness | Compute Cost | Example |
+|------------|:---:|:---:|---------|
+| **Trivial bound** | Loose | O(1) | "Remaining items have zero weight" |
+| **Fractional / continuous relaxation** | Moderate | O(n log n) | 0/1 Knapsack → fractional knapsack on remainder |
+| **Problem-specific heuristic** | Tight | O(n) or O(n log n) | TSP: row/column reduction of cost matrix |
+| **Lagrangian relaxation** | Very tight | O(m * log n) | Relax constraints, solve easier subproblem |
+| **LP relaxation** | Tight | Polynomial (simplex) | Integer programming → solve as LP |
+
+> [!warning] The bounding function must be **admissible**
+> For minimization: bound must be a **lower bound** (underestimate) on the cost from this partial solution. For maximization: an **upper bound** (overestimate). A non-admissible bound may prune the optimal solution.
+
+### Pseudocode
+
+#### Generic B&B Template (LC - Least Cost)
+
+```
+BranchAndBound(initialProblem):
+    pq ← MinPriorityQueue ordered by lowerBound (or MaxPQ for maximization)
+    incumbent ← +∞  (or -∞ for maximization)
+    bestSolution ← NIL
+    root ← createNode(initialProblem)
+    root.bound ← computeBound(root)
+    pq.insert(root)
+
+    while pq is not empty:
+        current ← pq.extractMin()     # most promising node first
+
+        if current.bound ≥ incumbent:  # cannot beat incumbent
+            continue                    # PRUNE — skip this node
+
+        if isLeaf(current):
+            value ← evaluate(current)
+            if value < incumbent:
+                incumbent ← value
+                bestSolution ← current
+            continue
+
+        # BRANCH: generate children
+        for each choice in getChoices(current):
+            child ← extend(current, choice)
+            if not feasible(child):
+                continue
+            child.bound ← computeBound(child)
+            if child.bound < incumbent:    # promising
+                pq.insert(child)
+
+    return (incumbent, bestSolution)
+```
+
+#### 0/1 Knapsack — Branch and Bound
+
+```
+KnapsackB&B(items[1 .. n], capacity):
+    # Sort items by value/weight ratio descending
+    Sort items by (value/weight) descending
+    pq ← MaxPriorityQueue ordered by upperBound (profit + fractional remainder)
+    incumbent ← -∞
+    bestSubset ← NIL
+
+    root.bound ← fractionalKnapsackRemaining(items, 0, 0, capacity)
+    pq.insert(root)
+
+    while pq is not empty:
+        node ← pq.extractMax()
+        if node.bound ≤ incumbent:
+            continue                              # prune
+
+        if node.level = n or node.weight = capacity:
+            if node.profit > incumbent:
+                incumbent ← node.profit
+                bestSubset ← node.choices
+            continue
+
+        # Branch: INCLUDE next item
+        if node.weight + items[node.level + 1].weight ≤ capacity:
+            incl ← createInclude(node, items[node.level + 1])
+            incl.bound ← incl.profit + fractionalKnapsackRemaining(
+                items, incl.level + 1, incl.weight, capacity)
+            if incl.bound > incumbent:
+                pq.insert(incl)
+
+        # Branch: EXCLUDE next item
+        excl ← createExclude(node, items[node.level + 1])
+        excl.bound ← excl.profit + fractionalKnapsackRemaining(
+            items, excl.level + 1, excl.weight, capacity)
+        if excl.bound > incumbent:
+            pq.insert(excl)
+
+    return (incumbent, bestSubset)
+
+fractionalKnapsackRemaining(items, start, currentWeight, capacity):
+    remainingCapacity ← capacity - currentWeight
+    profit ← 0
+    for i ← start to n:
+        if items[i].weight ≤ remainingCapacity:
+            profit ← profit + items[i].value
+            remainingCapacity ← remainingCapacity - items[i].weight
+        else:
+            profit ← profit + items[i].value * (remainingCapacity / items[i].weight)
+            break
+    return profit
+```
+
+#### TSP — Branch and Bound
+
+```
+TSPB&B(cost[1 .. n][1 .. n]):
+    # Row reduction + column reduction to get initial lower bound
+    reducedCost ← reduceMatrix(cost)
+    pq ← MinPriorityQueue ordered by lowerBound
+    incumbent ← +∞
+    bestTour ← NIL
+
+    root.path ← [1]              # start at city 1
+    root.bound ← reducedCost.lowerBound
+    pq.insert(root)
+
+    while pq is not empty:
+        node ← pq.extractMin()
+        if node.bound ≥ incumbent:
+            continue
+
+        if node.path.length = n:
+            tourCost ← node.cost + cost[node.path.last][1]   # return to start
+            if tourCost < incumbent:
+                incumbent ← tourCost
+                bestTour ← node.path + [1]
+            continue
+
+        lastCity ← node.path.last
+        for each city i NOT in node.path:
+            child.cost ← node.cost + cost[lastCity][i]
+            child.path ← node.path + [i]
+            child.matrix ← node.matrix with row lastCity, col i set to ∞
+            child.bound ← child.cost + reduceMatrix(child.matrix).lowerBound
+            if child.bound < incumbent:
+                pq.insert(child)
+
+    return (incumbent, bestTour)
+
+reduceMatrix(matrix):
+    lowerBound ← 0
+    # Row reduction
+    for each row r:
+        minVal ← min in row r, excluding ∞
+        if minVal ≠ 0 and minVal ≠ ∞:
+            lowerBound ← lowerBound + minVal
+            subtract minVal from each element in row r
+    # Column reduction
+    for each column c:
+        minVal ← min in column c, excluding ∞
+        if minVal ≠ 0 and minVal ≠ ∞:
+            lowerBound ← lowerBound + minVal
+            subtract minVal from each element in column c
+    return (reducedMatrix, lowerBound)
+```
+
+### B&B Execution Walkthrough (0/1 Knapsack)
+
+Consider: `items = [(wt:4, val:$4), (wt:7, val:$7), (wt:5, val:$5), (wt:3, val:$3)]`, capacity = 10. Sorted by value/weight: (4/4=1.0), (7/7=1.0), (5/5=1.0), (3/3=1.0).
+
+| Step | E-Node | Action | Incumbent | Live Nodes (bound, profit) |
+|------|--------|--------|:---:|---------|
+| 0 | — | Start | -∞ | Root(bound=10.0, p=0) |
+| 1 | Root | Branch | -∞ | Incl1(bound=10.0, p=4), Excl1(bound=9.3, p=0) |
+| 2 | Incl1 | Branch (best bound) | -∞ | Incl1+Incl2: wt=11 > 10 → ✗ (pruned). Incl1+Excl2(bound=9.1, p=4), Excl1(bound=9.3) |
+| 3 | Excl1 | Branch (best bound) | -∞ | Excl1+Incl2(bound=9.3, p=7), Incl1+Excl2(bound=9.1), Excl1+Excl2(bound=6.6) |
+| 4 | Excl1+Incl2 | Branch | -∞ | Excl1+Incl2+Incl3: wt=12 > 10 → ✗. Excl1+Incl2+Excl3(bound=8.0, p=7) |
+| 5 | Incl1+Excl2 | Branch | -∞ | Incl1+Excl2+Incl3(bound=9.5, p=9), Incl1+Excl2+Excl3(bound=7.5, p=4) |
+| 6 | Incl1+Excl2+Incl3 | Leaf (wt=9, p=$9) | **$9** | Excl1+Incl2+Excl3(bound=8.0, p=7), Incl1+Excl2+Excl3(bound=7.5) |
+| 7 | Excl1+Incl2+Excl3 | bound=8.0 < incumbent=$9 → **PRUNE** | $9 | Incl1+Excl2+Excl3(bound=7.5) |
+| 8 | Incl1+Excl2+Excl3 | bound=7.5 < incumbent=$9 → **PRUNE** | $9 | (empty — done) |
+
+**Optimal**: Items 1 + 3 = profit $9, weight 9.
+
+> [!warning] Pitfalls
+> - **Loose bounds kill performance** — a trivial bound (e.g., 0) means you explore the entire state space. Design tight, admissible bounds.
+> - **Branching order matters** — expanding the wrong node first delays finding a good incumbent. Always use LC (best-bound-first) for hard problems.
+> - **Inadmissible bounds** — a bound that overestimates (for minimization) may prune the optimal solution. Double-check your bounding function never crosses the true optimum.
+> - **Memory explosion** — the live-node priority queue can grow to O(2^n) in worst case. Use LIFO (DFS) variant when memory is a concern, accepting slower convergence.
+> - **Not for real-time systems** — B&B has no worst-case time guarantee. It may still explore exponential nodes if bounds are weak.
+> - **Incorrect tie-breaking** — when multiple nodes have the same bound, break ties in favor of deeper nodes or use a consistent heuristic to avoid thrashing.
+> - **Neglecting to update incumbent** — if you don't update the global incumbent when a better solution is found, pruning becomes ineffective and you explore the whole tree.
+> - **Duplicate detection** — some problems generate the same state through different branching paths. Without memoization, B&B will re-explore.
+
+> [!question]- Q: What is the difference between Branch and Bound and Backtracking?
+> **Answer:** Backtracking is for **feasibility/enumeration** (find a solution / all solutions). B&B is for **optimization** (find the best solution). B&B uses a **bounding function** to prune based on optimality, while backtracking prunes based on constraints. B&B also tracks a global **incumbent** (best so far).
+
+> [!question]- Q: What does "admissible bound" mean in B&B?
+> **Answer:** For a minimization problem, the bound must be a **lower bound** — it must always be **less than or equal to** the true optimal cost of completing the partial solution. If the bound ever exceeds the true optimum, it's inadmissible and may cause B&B to discard the optimal branch.
+
+> [!question]- Q: Why use LC (Least Cost) search over FIFO/LIFO?
+> **Answer:** LC expands the node with the **best bound first**, which typically finds a good incumbent early. A good incumbent means aggressive pruning. FIFO may waste time on shallow unpromising nodes; LIFO may go very deep on a bad path. LC is the fastest to converge to the optimum in practice.
+
+> [!question]- Q: How do you design a bounding function for 0/1 Knapsack?
+> **Answer:** Use the **fractional knapsack** greedy solution on remaining items (sorted by value/weight). This is an admissible upper bound for maximization because fractional selection is always at least as good as integer selection. It's cheap to compute (O(k) for k remaining items) and reasonably tight.
+
+> [!question]- Q: When would you use B&B over Dynamic Programming?
+> **Answer:** When the DP state space is too large. For example, TSP with DP has O(n² * 2^n) states — infeasible for n > 25. B&B with a good bound can solve TSP for n=40–60 in practice. Also, when the problem lacks overlapping subproblems (DP's assumption), B&B is the natural choice.
+
+### Resources
+
+- *CLRS* — Chapter 35 (Approximation Algorithms) touches on B&B; detailed coverage in *Horowitz & Sahni* "Fundamentals of Computer Algorithms"
+- *Algorithm Design Manual* (Skiena) — Section 7.7: Branch and Bound
+- [Branch and Bound - GeeksforGeeks](https://www.geeksforgeeks.org/branch-and-bound-algorithm/)
+- [0/1 Knapsack using Branch and Bound](https://www.geeksforgeeks.org/0-1-knapsack-using-branch-and-bound/)
+- [Travelling Salesman Problem using Branch and Bound](https://www.geeksforgeeks.org/traveling-salesman-problem-using-branch-and-bound-2/)
+- [Aditya Verma - Branch and Bound Playlist (YouTube)](https://www.youtube.com/playlist?list=PL_z_8CaSLPWdb4yWx1R7n2PcAq9K5QmhP)
 
 ---
 
@@ -1505,6 +1853,23 @@ DigitDP(L, R):
 > [!question]- Q: How do you approach a DP problem from scratch?
 > **Answer:** **(1)** Define the state: what parameters uniquely describe a subproblem? **(2)** Define the recurrence: how does the answer for state X depend on smaller states? **(3)** Define base cases: what are the trivial answers? **(4)** Determine iteration order: which dimension is outer? **(5)** Implement: either recursive+memo or iterative table. **(6)** Optional: optimize space.
 
+### DP Optimizations (CP)
+
+#### Divide-and-Conquer DP optimization
+- Applies when transition `dp[i][j] = min_{k<j}(dp[i-1][k] + C(k,j))` has quadrangle inequality and monotone opt
+- Compute optimal k for j in ranges via divide & conquer → O(n log n) per layer
+
+#### Knuth optimization
+- Applies to interval DP `dp[i][j] = min_{k in (i..j)}(dp[i][k] + dp[k][j]) + w(i,j)` when quadrangle inequality and monotone opt hold
+- Restricts k to `[opt[i][j-1], opt[i+1][j]]` → O(n^2)
+
+#### CHT DP / Li Chao tree
+- Lines of form `y = m*x + b` with queries in monotone x (convex hull trick), or arbitrary x (Li Chao)
+- Transforms O(n^2) transition into O(n log n)
+
+> [!warning] Only apply after proving conditions
+> - D&C and Knuth need monotonicity/convexity conditions. Guessing leads to wrong answers.
+
 ### Resources
 
 - [Dynamic Programming - GeeksforGeeks](https://www.geeksforgeeks.org/dynamic-programming/)
@@ -1595,6 +1960,44 @@ DFS(node, visited):
 | **Back edge** | To ancestor (indicates cycle) | Gray → Gray (in directed) |
 | **Forward edge** | To descendant (non-tree) | Gray → Black with disc[u] < disc[v] |
 | **Cross edge** | Between unrelated nodes | Gray → Black with disc[u] > disc[v] |
+
+### Tree Queries (CP)
+
+#### Euler Tour flattening (tin/tout) + subtree queries
+- Do a DFS and record `tin[v]` (entry time), `tout[v]` (exit time)
+- Subtree of `v` corresponds to interval `[tin[v], tout[v]]` in the Euler order
+- Use Fenwick/Segment Tree on this array for subtree sums/min/max
+
+```mermaid
+flowchart LR
+    A[Tree] --> B[DFS order: tin/tout]
+    B --> C[Flattened array]
+    C --> D[Fenwick/Segtree on ranges]
+```
+
+#### LCA (Binary Lifting) — online O(log n)
+- Precompute `up[v][j]` = 2^j-th ancestor of v, and depth[v]
+- To lift u to v’s depth, climb bits of `diff=depth[u]-depth[v]`
+- Then climb both until parents match; parent is LCA
+
+#### Heavy-Light Decomposition (HLD) — path queries
+- Decompose tree into heavy paths + light edges
+- Map nodes to base-array indices; a path u→v breaks into O(log n) segments
+- Query/update each segment via segment tree (range min/sum/max)
+
+```mermaid
+flowchart LR
+    T[Tree] --> H[Decompose]
+    H --> A1[Chains]
+    A1 --> Base[Base array]
+    Base --> ST[Segment Tree]
+```
+
+#### DSU on Tree (small-to-large)
+- Maintain “color/frequency” or feature counts on subtrees by always merging the smaller bag into the larger bag to keep total merges O(n log n)
+- Good for queries like “for every node, how many distinct colors in its subtree?”
+
+---
 
 ### Shortest Path Algorithms
 
@@ -1755,6 +2158,33 @@ TopologicalSort():
 |-----------|--------|:---:|
 | **Kosaraju's** | Two DFS passes (original + transpose) | O(V + E) |
 | **Tarjan's** | Single DFS with stack and low-link values | O(V + E) |
+
+### 2-SAT (Implication Graph + SCC)
+
+> [!summary] Model boolean constraints as implications and solve with SCC.
+
+#### Modeling Clauses
+- Variables: x ∈ {0,1}. Literals: x, ¬x. Index mapping: for var i, use nodes i and i^1 or (2*i, 2*i^1) convention
+- Clause (a ∨ b) becomes implications: (¬a → b) and (¬b → a)
+- Build a directed graph of 2*n nodes
+
+```mermaid
+flowchart LR
+    na[¬a] --> b[b]
+    nb[¬b] --> a[a]
+```
+
+#### SCC Solution
+- Run SCC (Kosaraju or Tarjan) on implication graph
+- If a and ¬a lie in the same SCC → UNSAT
+- Otherwise, assignment by decreasing SCC topological order: literal with higher order = true, its negation = false
+
+#### Pitfalls
+- Wrong index/negation mapping (off-by-one)
+- Forgetting both implications for each clause
+- Extracting assignment in increasing order (must be decreasing SCC topological order)
+
+---
 
 ### Bridges and Articulation Points
 
@@ -2172,6 +2602,24 @@ Manacher(s):
 > [!question]- Q: What's the difference between Suffix Array and Suffix Tree?
 > **Answer:** Both index all suffixes of a string. **Suffix Tree** = explicit tree structure, O(n) construction but high memory overhead. **Suffix Array** = sorted array of suffix indices, O(n log n) or O(n) construction, lower memory. Suffix Array + LCP array provides the same functionality as Suffix Tree with less memory. Most competitive programming uses Suffix Array.
 
+#### Suffix Automaton (SAM)
+
+> [!summary] A compact automaton that recognizes all substrings of a string in O(n) states.
+
+Key ideas:
+- Each state represents endpos-equivalence class of substrings
+- Transitions by characters; `link` points to the longest proper suffix class
+- Build online in O(n)
+
+Typical queries:
+- Number of distinct substrings (sum over states of `len[v] - len[link[v]]`)
+- Longest common substring (walk automaton with the other string)
+- Count occurrences of a substring (endpos sizes)
+
+> [!warning] Pitfalls
+> - Forgetting to clone states when extending causes wrong links
+> - Off-by-one on `len[]` and link-length differences
+
 ### Resources
 
 - [String Algorithms - CP-Algorithms](https://cp-algorithms.com/string/)
@@ -2206,6 +2654,30 @@ Manacher(s):
 | **Chinese Remainder Theorem** | System of congruences | O(n log n) |
 | **Euler's Totient Function** | Count of coprime numbers | O(√n) |
 | **Fermat's Little Theorem** | a^(p-1) ≡ 1 (mod p) | Used for modular inverse |
+
+### Convolution: FFT vs NTT
+
+#### When you need convolution
+- Multiply polynomials, correlate sequences, string matching via convolution, subset DP accelerations
+
+#### FFT vs NTT
+| Method | Domain | Exactness | Mod/Root Requirements | Notes |
+|--------|--------|----------:|-----------------------|-------|
+| FFT | Complex | Approximate (floating error) | None | Needs rounding; careful with precision |
+| NTT | Mod prime | Exact (mod p) | Prime p = k·2^m + 1 with primitive root | Preferred in CP for exact modular convolution |
+
+#### NTT prerequisites (concept-only)
+- Choose prime p with primitive root g; precompute n-th roots of unity modulo p
+- Iterative butterfly: bit-reversal permutation, length-doubling loops
+
+#### Pitfalls
+- Wrong modulus (no primitive root of required order)
+- Overflow before mod (use 64-bit intermediates)
+- Forgetting normalization when inverse-transforming
+
+> References: AtCoder Library convolution, cp-algorithms NTT page
+
+---
 
 ### GCD and LCM
 
@@ -2865,6 +3337,31 @@ InsertInterval(intervals[1 .. n], newInterval):   // intervals sorted, no overla
 
 - [Interval Problems - LeetCode Discuss](https://leetcode.com/discuss/general-discussion/794725/)
 
+### Offline Queries (CP)
+
+#### Sort queries + Fenwick/Segment Tree
+- Transform query order to a monotone order (by R or value), maintain DS state as you advance pointer
+- Classic: count inversions, kth statistics, offline “add elements ≤ X” and answer queries at X
+
+#### Sweep line as events
+- Turn intervals into start/end events, sort by coordinate with stable tie-breaking
+- Maintain active set (multiset, PQ, segtree) to answer “max overlap”, union length, skyline
+
+#### Mo’s Algorithm (range add/remove)
+- Reorder queries in blocks of size B ≈ n/√q, move L/R pointers to match next query
+- Maintain a mutable structure with `add(x)`, `remove(x)` in O(1)/O(log n)
+- Complexity: O((n + q) * sqrt(n)) typically; constants matter
+
+#### sqrt decomposition (when segtree is overkill)
+- Block the array into √n chunks; keep per-block summaries
+- Good for range queries with rare updates
+
+> [!warning] Pitfalls
+> - Mo’s + updates (time dimension) requires Mo’s with modifications variant
+> - Non-commutative operations may not be Mo-friendly
+> - Sweep line requires correct tie-breaking (start before end)
+> - Offline sort+BIT depends on a good transform and compression
+
 ---
 
 ## 15. Randomized Algorithms
@@ -3268,6 +3765,26 @@ DinicDFS(u, sink, flow, level, ptr):
 > [!question]- Q: When is Dinic's algorithm particularly fast?
 > **Answer:** Dinic's runs in O(min(V^(2/3), √E) * E) on unit-capacity networks (like bipartite matching), making it O(E√V). It's also O(V²E) generally, which beats Edmonds-Karp's O(VE²) on dense graphs. In practice, Dinic's is the go-to max flow implementation.
 
+### Min-Cost Max-Flow (MCMF)
+
+> [!summary] Find a flow of maximum value with minimum total cost.
+
+#### Successive Shortest Augmenting Path
+- Repeatedly find the shortest augmenting path (by edge cost) in the residual graph
+- Augment flow, update residual capacities and costs
+
+#### Potentials + Dijkstra (reduced costs)
+- To handle negative edges safely and use Dijkstra: maintain node potentials π so reduced costs `c'(u,v)=c(u,v)+π(u)-π(v)` are non-negative
+- Initialize π via Bellman-Ford or zeros; update π after each Dijkstra pass using distances
+
+When to use vs Dinic:
+- Assignment problems, min-cost circulation, min-cost matching, flows with costs
+
+> [!warning] Pitfalls
+> - Overflow on cost accumulation — use 64-bit
+> - Forgetting to maintain reverse edges with negative cost
+> - Not updating potentials leads to wrong reduced costs
+
 ### Resources
 
 - [Network Flow - CP-Algorithms](https://cp-algorithms.com/graph/edmonds_karp.html)
@@ -3361,315 +3878,6 @@ TreeVertexCover(root):
 
 ---
 
-## 19. Branch and Bound
-
-```mermaid
-flowchart TD
-    subgraph TSP["TSP Branch and Bound (4 cities)"]
-        N0["Root: path=[1], cost=0, bound=14"] --> N1["path=[1,2], cost=10, bound=17"]
-        N0 --> N2["path=[1,3], cost=15, bound=15"]
-        N0 --> N3["path=[1,4], cost=8, bound=14"]
-        N1 --> N4["path=[1,2,3], cost=25, bound=25"]
-        N1 --> N5["path=[1,2,4], cost=19, bound=19"]
-        N3 --> N6["path=[1,4,2], cost=18, bound=18"]
-        N3 --> N7["path=[1,4,3], cost=22, bound=22"]
-        N7 --> N8["path=[1,4,3,2,1], cost=32 ✓ BEST"]
-    end
-    subgraph Knap["0/1 Knapsack B&B (W=10, items sorted by v/w)"]
-        K0["Root: level=0, profit=0, weight=0, bound=$10.20"] --> K1["Include item1: profit=$4, wt=4, bound=$9.60"]
-        K0 --> K2["Exclude item1: profit=$0, wt=0, bound=$8.40"]
-        K1 --> K3["Include item2: profit=$7, wt=8, bound=$9.10"]
-        K1 --> K4["Exclude item2: profit=$4, wt=4, bound=$7.60"]
-        K3 --> K5["Include item3: wt=13 > 10 → PRUNED ✗"]
-        K3 --> K6["Exclude item3: profit=$7, wt=8, bound=$7.00 (leaf ✓)"]
-    end
-    style N8 fill:#2d6,stroke:#090,color:#fff
-    style K6 fill:#2d6,stroke:#090,color:#fff
-    style K5 fill:#c44,stroke:#900,color:#fff
-```
-
-> [!summary] Branch and Bound
-> Branch and Bound is a systematic state-space search for combinatorial optimization. It **branches** (generates subproblems) and **bounds** (computes optimistic estimates) to prune unpromising regions. Unlike backtracking, B&B explicitly tracks an **incumbent** (best solution so far) and abandons any partial solution whose best possible completion is worse than the incumbent.
-
-### Intuition (Plain English)
-
-Imagine you're searching for the cheapest flight route through 20 cities. You've already found one route costing $1,500. Now, before fully exploring another partial route that already costs $1,200 and still has 15 cities left, you estimate the absolute minimum it could cost in total — say $200 for the remaining cities. Best case: $1,400. Since $1,400 < $1,500, you keep exploring. But if the partial cost was $1,450 with a minimum remaining of $200 (best case $1,650), you'd **prune** that branch immediately — it can never beat $1,500.
-
-That's the core idea: **use bounds to avoid exploring branches that can't improve on what you already have**.
-
-### Key Concepts
-
-| Term | Meaning |
-|------|---------|
-| **State Space Tree** | The tree of all partial solutions; each node = one subproblem |
-| **Live Node** | Generated but not yet fully explored |
-| **E-Node** | The node **currently** being expanded (branched from) |
-| **Dead Node** | Fathomed: bound worse than incumbent, infeasible, or fully explored |
-| **Bounding Function** | Computes an optimistic estimate of the best completion from a partial solution |
-| **Incumbent** | The best complete solution found so far (global upper bound for minimization, lower bound for maximization) |
-| **Pruning / Fathoming** | Killing a node because it cannot lead to a better solution than the incumbent |
-
-### Branch and Bound vs Backtracking vs Dynamic Programming
-
-| Aspect | Branch and Bound | Backtracking | Dynamic Programming |
-|--------|:---:|:---:|:---:|
-| **Goal** | Optimization (min/max with constraints) | Feasibility / enumeration (all solutions or one) | Optimization with overlapping subproblems |
-| **State space** | Explicit tree with bounds | Implicit tree (constraint-driven) | Table of subproblem solutions |
-| **Pruning mechanism** | Bounding function vs incumbent | Constraint checks, symmetry breaking | Overlap avoidance via memoization |
-| **Search order** | LC (best-bound first) or FIFO/LIFO | DFS (depth-first) by default | Bottom-up or top-down |
-| **Optimality guarantee** | Yes (given admissible bounds) | Not applicable (enumeration) | Yes (if optimal substructure holds) |
-| **Memory** | Moderate to high (live node queue) | Low (recursion stack) | High (table, often O(n*m)) |
-| **Classic problems** | 0/1 Knapsack, TSP, 15-puzzle, job assignment | N-Queens, Sudoku, permutations, subsets | Fibonacci, LCS, matrix chain, coin change |
-| **Works when** | Bounding function exists and is tight | Constraints prune early | Optimal substructure + overlapping subproblems |
-
-### Variants of Branch and Bound
-
-| Variant | Data Structure | Expansion Strategy | Best For |
-|---------|:---:|---------|----------|
-| **FIFO** (BFS-based) | Queue | First-come, first-served; level-by-level | Guarantees shallow solutions; simple to implement |
-| **LIFO** (DFS-based) | Stack | Go deep fast; find an incumbent quickly | Memory efficient; good when any solution helps prune |
-| **LC-Branch and Bound** (Best-first) | Priority Queue (min/max heap) | Expand node with best (lowest) bound first | Most common in practice; reaches optimal fastest |
-
-> [!tip] LC-Branch and Bound is the workhorse
-> In almost all real-world implementations, you use a **priority queue** ordered by bound. The node with the most promising bound gets expanded next. This tends to find a good incumbent early and prune heavily.
-
-### How to Recognize a Branch and Bound Problem
-
-| You see... | Consider B&B when... |
-|------------|----------------------|
-| "Minimize cost / maximize profit with constraints" | The state space is exponential, but you can compute a bound |
-| "Find the optimal assignment / schedule / route" | Multiple possible choices at each step |
-| "Combinatorial optimization" — TSP-like patterns | Greedy is suboptimal, DP table is too large (e.g., O(2^n)) |
-| "NP-Hard optimization" trade-off problems | You need the exact optimum, not an approximation |
-| Problem has a natural sorting (by value/weight, by benefit) | Sorting gives you a tight fractional (continuous) bound |
-
-### Classic Problems
-
-| Problem | Description | Bounding Function | Complexity (worst case) |
-|---------|-------------|-------------------|:---:|
-| **0/1 Knapsack (B&B)** | Maximize value with weight limit | Fractional knapsack on remaining items | O(2^n) worst, much faster in practice |
-| **Travelling Salesman (TSP)** | Min-cost tour visiting all cities once | Reduced cost matrix (row/column reduction) | O(n!) worst, practical for n≤40-60 |
-| **15-Puzzle** | Slide tiles to reach goal configuration | Manhattan distance + linear conflicts | Exponential, practical for most instances |
-| **N-Queens (B&B)** | Place N queens with no attacks | Row/column constraint propagation | Faster than pure backtracking |
-| **Job Assignment** | Assign N workers to N jobs at min cost | Row/column reduction of cost matrix | O(n!) worst, bounded |
-| **Graph Coloring (B&B)** | Color graph with k colors | Number of colors used so far + saturation degree | Exponential |
-| **Subset Sum (B&B)** | Does a subset sum to target? | Remaining sum bounds | O(2^n) worst |
-
-### Bounding Function Design
-
-The **tighter** the bound, the more pruning — but computing the bound must be **fast**. There's a trade-off:
-
-| Bound Type | Tightness | Compute Cost | Example |
-|------------|:---:|:---:|---------|
-| **Trivial bound** | Loose | O(1) | "Remaining items have zero weight" |
-| **Fractional / continuous relaxation** | Moderate | O(n log n) | 0/1 Knapsack → fractional knapsack on remainder |
-| **Problem-specific heuristic** | Tight | O(n) or O(n log n) | TSP: row/column reduction of cost matrix |
-| **Lagrangian relaxation** | Very tight | O(m * log n) | Relax constraints, solve easier subproblem |
-| **LP relaxation** | Tight | Polynomial (simplex) | Integer programming → solve as LP |
-
-> [!warning] The bounding function must be **admissible**
-> For minimization: bound must be a **lower bound** (underestimate) on the cost from this partial solution. For maximization: an **upper bound** (overestimate). A non-admissible bound may prune the optimal solution.
-
-### Pseudocode
-
-#### Generic B&B Template (LC - Least Cost)
-
-```
-BranchAndBound(initialProblem):
-    pq ← MinPriorityQueue ordered by lowerBound (or MaxPQ for maximization)
-    incumbent ← +∞  (or -∞ for maximization)
-    bestSolution ← NIL
-    root ← createNode(initialProblem)
-    root.bound ← computeBound(root)
-    pq.insert(root)
-
-    while pq is not empty:
-        current ← pq.extractMin()     # most promising node first
-
-        if current.bound ≥ incumbent:  # cannot beat incumbent
-            continue                    # PRUNE — skip this node
-
-        if isLeaf(current):
-            value ← evaluate(current)
-            if value < incumbent:
-                incumbent ← value
-                bestSolution ← current
-            continue
-
-        # BRANCH: generate children
-        for each choice in getChoices(current):
-            child ← extend(current, choice)
-            if not feasible(child):
-                continue
-            child.bound ← computeBound(child)
-            if child.bound < incumbent:    # promising
-                pq.insert(child)
-
-    return (incumbent, bestSolution)
-```
-
-#### 0/1 Knapsack — Branch and Bound
-
-```
-KnapsackB&B(items[1 .. n], capacity):
-    # Sort items by value/weight ratio descending
-    Sort items by (value/weight) descending
-    pq ← MaxPriorityQueue ordered by upperBound (profit + fractional remainder)
-    incumbent ← -∞
-    bestSubset ← NIL
-
-    root.bound ← fractionalKnapsackRemaining(items, 0, 0, capacity)
-    pq.insert(root)
-
-    while pq is not empty:
-        node ← pq.extractMax()
-        if node.bound ≤ incumbent:
-            continue                              # prune
-
-        if node.level = n or node.weight = capacity:
-            if node.profit > incumbent:
-                incumbent ← node.profit
-                bestSubset ← node.choices
-            continue
-
-        # Branch: INCLUDE next item
-        if node.weight + items[node.level + 1].weight ≤ capacity:
-            incl ← createInclude(node, items[node.level + 1])
-            incl.bound ← incl.profit + fractionalKnapsackRemaining(
-                items, incl.level + 1, incl.weight, capacity)
-            if incl.bound > incumbent:
-                pq.insert(incl)
-
-        # Branch: EXCLUDE next item
-        excl ← createExclude(node, items[node.level + 1])
-        excl.bound ← excl.profit + fractionalKnapsackRemaining(
-            items, excl.level + 1, excl.weight, capacity)
-        if excl.bound > incumbent:
-            pq.insert(excl)
-
-    return (incumbent, bestSubset)
-
-fractionalKnapsackRemaining(items, start, currentWeight, capacity):
-    remainingCapacity ← capacity - currentWeight
-    profit ← 0
-    for i ← start to n:
-        if items[i].weight ≤ remainingCapacity:
-            profit ← profit + items[i].value
-            remainingCapacity ← remainingCapacity - items[i].weight
-        else:
-            profit ← profit + items[i].value * (remainingCapacity / items[i].weight)
-            break
-    return profit
-```
-
-#### TSP — Branch and Bound
-
-```
-TSPB&B(cost[1 .. n][1 .. n]):
-    # Row reduction + column reduction to get initial lower bound
-    reducedCost ← reduceMatrix(cost)
-    pq ← MinPriorityQueue ordered by lowerBound
-    incumbent ← +∞
-    bestTour ← NIL
-
-    root.path ← [1]              # start at city 1
-    root.bound ← reducedCost.lowerBound
-    pq.insert(root)
-
-    while pq is not empty:
-        node ← pq.extractMin()
-        if node.bound ≥ incumbent:
-            continue
-
-        if node.path.length = n:
-            tourCost ← node.cost + cost[node.path.last][1]   # return to start
-            if tourCost < incumbent:
-                incumbent ← tourCost
-                bestTour ← node.path + [1]
-            continue
-
-        lastCity ← node.path.last
-        for each city i NOT in node.path:
-            child.cost ← node.cost + cost[lastCity][i]
-            child.path ← node.path + [i]
-            child.matrix ← node.matrix with row lastCity, col i set to ∞
-            child.bound ← child.cost + reduceMatrix(child.matrix).lowerBound
-            if child.bound < incumbent:
-                pq.insert(child)
-
-    return (incumbent, bestTour)
-
-reduceMatrix(matrix):
-    lowerBound ← 0
-    # Row reduction
-    for each row r:
-        minVal ← min in row r, excluding ∞
-        if minVal ≠ 0 and minVal ≠ ∞:
-            lowerBound ← lowerBound + minVal
-            subtract minVal from each element in row r
-    # Column reduction
-    for each column c:
-        minVal ← min in column c, excluding ∞
-        if minVal ≠ 0 and minVal ≠ ∞:
-            lowerBound ← lowerBound + minVal
-            subtract minVal from each element in column c
-    return (reducedMatrix, lowerBound)
-```
-
-### B&B Execution Walkthrough (0/1 Knapsack)
-
-Consider: `items = [(wt:4, val:$4), (wt:7, val:$7), (wt:5, val:$5), (wt:3, val:$3)]`, capacity = 10. Sorted by value/weight: (4/4=1.0), (7/7=1.0), (5/5=1.0), (3/3=1.0).
-
-| Step | E-Node | Action | Incumbent | Live Nodes (bound, profit) |
-|------|--------|--------|:---:|---------|
-| 0 | — | Start | -∞ | Root(bound=10.0, p=0) |
-| 1 | Root | Branch | -∞ | Incl1(bound=10.0, p=4), Excl1(bound=9.3, p=0) |
-| 2 | Incl1 | Branch (best bound) | -∞ | Incl1+Incl2: wt=11 > 10 → ✗ (pruned). Incl1+Excl2(bound=9.1, p=4), Excl1(bound=9.3) |
-| 3 | Excl1 | Branch (best bound) | -∞ | Excl1+Incl2(bound=9.3, p=7), Incl1+Excl2(bound=9.1), Excl1+Excl2(bound=6.6) |
-| 4 | Excl1+Incl2 | Branch | -∞ | Excl1+Incl2+Incl3: wt=12 > 10 → ✗. Excl1+Incl2+Excl3(bound=8.0, p=7) |
-| 5 | Incl1+Excl2 | Branch | -∞ | Incl1+Excl2+Incl3(bound=9.5, p=9), Incl1+Excl2+Excl3(bound=7.5, p=4) |
-| 6 | Incl1+Excl2+Incl3 | Leaf (wt=9, p=$9) | **$9** | Excl1+Incl2+Excl3(bound=8.0, p=7), Incl1+Excl2+Excl3(bound=7.5) |
-| 7 | Excl1+Incl2+Excl3 | bound=8.0 < incumbent=$9 → **PRUNE** | $9 | Incl1+Excl2+Excl3(bound=7.5) |
-| 8 | Incl1+Excl2+Excl3 | bound=7.5 < incumbent=$9 → **PRUNE** | $9 | (empty — done) |
-
-**Optimal**: Items 1 + 3 = profit $9, weight 9.
-
-> [!warning] Pitfalls
-> - **Loose bounds kill performance** — a trivial bound (e.g., 0) means you explore the entire state space. Design tight, admissible bounds.
-> - **Branching order matters** — expanding the wrong node first delays finding a good incumbent. Always use LC (best-bound-first) for hard problems.
-> - **Inadmissible bounds** — a bound that overestimates (for minimization) may prune the optimal solution. Double-check your bounding function never crosses the true optimum.
-> - **Memory explosion** — the live-node priority queue can grow to O(2^n) in worst case. Use LIFO (DFS) variant when memory is a concern, accepting slower convergence.
-> - **Not for real-time systems** — B&B has no worst-case time guarantee. It may still explore exponential nodes if bounds are weak.
-> - **Incorrect tie-breaking** — when multiple nodes have the same bound, break ties in favor of deeper nodes or use a consistent heuristic to avoid thrashing.
-> - **Neglecting to update incumbent** — if you don't update the global incumbent when a better solution is found, pruning becomes ineffective and you explore the whole tree.
-> - **Duplicate detection** — some problems generate the same state through different branching paths. Without memoization, B&B will re-explore.
-
-> [!question]- Q: What is the difference between Branch and Bound and Backtracking?
-> **Answer:** Backtracking is for **feasibility/enumeration** (find a solution / all solutions). B&B is for **optimization** (find the best solution). B&B uses a **bounding function** to prune based on optimality, while backtracking prunes based on constraints. B&B also tracks a global **incumbent** (best so far).
-
-> [!question]- Q: What does "admissible bound" mean in B&B?
-> **Answer:** For a minimization problem, the bound must be a **lower bound** — it must always be **less than or equal to** the true optimal cost of completing the partial solution. If the bound ever exceeds the true optimum, it's inadmissible and may cause B&B to discard the optimal branch.
-
-> [!question]- Q: Why use LC (Least Cost) search over FIFO/LIFO?
-> **Answer:** LC expands the node with the **best bound first**, which typically finds a good incumbent early. A good incumbent means aggressive pruning. FIFO may waste time on shallow unpromising nodes; LIFO may go very deep on a bad path. LC is the fastest to converge to the optimum in practice.
-
-> [!question]- Q: How do you design a bounding function for 0/1 Knapsack?
-> **Answer:** Use the **fractional knapsack** greedy solution on remaining items (sorted by value/weight). This is an admissible upper bound for maximization because fractional selection is always at least as good as integer selection. It's cheap to compute (O(k) for k remaining items) and reasonably tight.
-
-> [!question]- Q: When would you use B&B over Dynamic Programming?
-> **Answer:** When the DP state space is too large. For example, TSP with DP has O(n² * 2^n) states — infeasible for n > 25. B&B with a good bound can solve TSP for n=40–60 in practice. Also, when the problem lacks overlapping subproblems (DP's assumption), B&B is the natural choice.
-
-### Resources
-
-- *CLRS* — Chapter 35 (Approximation Algorithms) touches on B&B; detailed coverage in *Horowitz & Sahni* "Fundamentals of Computer Algorithms"
-- *Algorithm Design Manual* (Skiena) — Section 7.7: Branch and Bound
-- [Branch and Bound - GeeksforGeeks](https://www.geeksforgeeks.org/branch-and-bound-algorithm/)
-- [0/1 Knapsack using Branch and Bound](https://www.geeksforgeeks.org/0-1-knapsack-using-branch-and-bound/)
-- [Travelling Salesman Problem using Branch and Bound](https://www.geeksforgeeks.org/traveling-salesman-problem-using-branch-and-bound-2/)
-- [Aditya Verma - Branch and Bound Playlist (YouTube)](https://www.youtube.com/playlist?list=PL_z_8CaSLPWdb4yWx1R7n2PcAq9K5QmhP)
-
----
-
 ## Interactive Visualization References
 
 > [!tip]- Visualize algorithms step-by-step
@@ -3713,19 +3921,19 @@ Consider: `items = [(wt:4, val:$4), (wt:7, val:$7), (wt:5, val:$5), (wt:3, val:$
 
 ### Phase 2: Core Techniques (Weeks 4-7)
 6. Backtracking
-7. Greedy Algorithms
-8. Dynamic Programming (1D, 2D, common patterns)
-9. Graph Traversal (BFS, DFS)
-10. Bit Manipulation
+7. Branch and Bound
+8. Greedy Algorithms
+9. Dynamic Programming (1D, 2D, common patterns)
+10. Graph Traversal (BFS, DFS)
+11. Bit Manipulation
 
 ### Phase 3: Advanced (Weeks 8-12)
-11. Advanced DP (bitmask, digit, trees)
-12. Shortest Path Algorithms
-13. MST, Topological Sort, SCC
-14. String Algorithms (KMP, Z, Trie)
-15. Binary Search on Answer
-16. Segment Trees, Fenwick Trees
-17. Branch and Bound
+12. Advanced DP (bitmask, digit, trees)
+13. Shortest Path Algorithms
+14. MST, Topological Sort, SCC
+15. String Algorithms (KMP, Z, Trie)
+16. Binary Search on Answer
+17. Segment Trees, Fenwick Trees
 
 ### Phase 4: Expert (Weeks 13+)
 18. Network Flow
