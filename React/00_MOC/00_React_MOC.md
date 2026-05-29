@@ -1,58 +1,68 @@
 ---
-tags: [react, frontend, moc]
-aliases: ["React MOC"]
+tags: [react, frontend, moc, learning-path]
+aliases: ["React MOC", "React Index", "React Learning Path"]
 status: stable
-updated: 2026-04-26
+updated: 2026-05-28
 ---
 
 # React Map of Content
 
 > [!summary] Scope
-> Comprehensive TypeScript-first React ecosystem: Hooks, Rendering Cycle, Redux Toolkit, RTK Query, React Router, Forms, Testing, Performance, React 19, Next.js, Portals, Tailwind CSS, E2E Testing, TypeScript Patterns, Real-Time, Design Systems, and Production Architecture.
+> Comprehensive TypeScript-first React ecosystem: Hooks, Rendering Cycle, Redux Toolkit, RTK Query, React Router, Forms, Testing, Performance, React 19, Next.js, Portals, Tailwind CSS, E2E Testing, TypeScript Patterns, Real-Time, Design Systems, Production Architecture, Accessibility, Security, Concurrent Features (Suspense/Transitions), State Management Alternatives (Zustand/Jotai), Layout Debugging, React Native, and a beginner on-ramp.
 
 ## Overview
 
-This MOC covers the complete modern React stack with 17 comprehensive guides totaling 25,000+ lines of production-ready content, code examples, and best practices.
+This MOC covers the complete modern React stack with 31 comprehensive guides totaling 35,000+ lines of production-ready content, code examples, and best practices.
 
 **What You'll Learn:**
 - Core React concepts (mental model, rendering, hooks)
-- State management (Redux Toolkit + RTK Query)
+- State management (Redux Toolkit + RTK Query + Zustand + Jotai)
 - Routing (React Router 6)
 - Forms (React Hook Form + Zod)
-- Testing (Testing Library + MSW)
-- Performance optimization
+- Testing (Testing Library + MSW + Playwright + a11y)
+- Performance optimization and memoization
 - Production architecture patterns
+- Accessibility (WCAG, jest-axe, focus management)
+- Security (XSS, CSRF, auth flows)
+- Concurrent features (Suspense, Transitions)
 - Debugging workflows
 - Real-world projects
+- Layout and styling debugging with React
+- React Native and cross-platform React
 
 ---
 
 ## Learning Paths
 
-### Path 1: Beginner → Intermediate (2-3 weeks)
+### Path 1: Beginner → Intermediate (3-4 weeks)
 
 **Week 1: React Fundamentals**
-1. [[01_React_Mental_Model_and_Rendering]] - Understanding how React works
-2. [[02_Hooks_Complete_Reference]] - Master all built-in hooks
-3. [[03_State_and_Effects_Common_Pitfalls]] - Avoid common mistakes
+1. [[04_React_Basics_Components_Props_and_State]] - Learn JSX, components, props, state — no prior React assumed
+2. [[01_React_Mental_Model_and_Rendering]] - Understand how React works under the hood
+3. [[02_Hooks_Complete_Reference]] - Master all built-in hooks
+4. [[03_State_and_Effects_Common_Pitfalls]] - Avoid common mistakes
 
 **Week 2: Core Tools**
-4. [[03_Routing_with_React_Router]] - Client-side routing
-5. [[04_Forms_and_Validation]] - Form handling with validation
-6. [[01_Redux_Toolkit_Essentials]] - Global state management
+5. [[03_Routing_with_React_Router]] - Client-side routing
+6. [[04_Forms_and_Validation]] - Form handling with validation
+7. [[01_Redux_Toolkit_Essentials]] - Global state management
 
-**Week 3: Advanced Topics**
-7. [[02_RTK_Query_Essentials]] - Data fetching and caching
-8. [[01_Testing_React_TL_and_MSW]] - Testing strategies
-9. [[02_Performance_and_Profiling]] - Optimization techniques
-10. [[04_Playbooks/04_Next.js_App_Router_and_Server_Components]] - Next.js basics
+**Week 3: Data Fetching and Testing**
+8. [[02_RTK_Query_Essentials]] - Data fetching and caching
+9. [[01_Testing_React_TL_and_MSW]] - Testing strategies
+10. [[05_Memoization_and_Rerenders_Mental_Model]] - Understand when and how to memoize
+
+**Week 4: Advanced Topics**
+11. [[02_Performance_and_Profiling]] - Optimization techniques
+12. [[04_Playbooks/04_Next.js_App_Router_and_Server_Components]] - Next.js basics
+13. [[05_Accessibility_and_A11y_Testing_in_React]] - Build accessible React apps
 
 **Practice Project:**
 - [[01_Vite_RR_TS_RTK_RTKQ_Starter_App]] - Build complete starter app
 
 ---
 
-### Path 2: Intermediate → Advanced (1-2 weeks)
+### Path 2: Intermediate → Advanced (2-3 weeks)
 
 **Advanced Concepts:**
 1. [[03_React_App_Architecture_Playbook]] - Production architecture
@@ -64,7 +74,12 @@ This MOC covers the complete modern React stack with 17 comprehensive guides tot
 7. [[04_Playbooks/07_E2E_Testing_with_Playwright]] - E2E testing
 8. [[04_Playbooks/08_React_TypeScript_Advanced_Patterns]] - TypeScript patterns
 9. [[04_Playbooks/09_WebSocket_and_Real_Time_Patterns]] - Real-time
-10. [[04_Playbooks/04_Next.js_App_Router_and_Server_Components]] - Next.js deep dive
+10. [[05_Concurrent_React_Suspense_and_Transitions]] - Concurrent features deep dive
+11. [[04_Playbooks/04_Next.js_App_Router_and_Server_Components]] - Next.js deep dive
+12. [[06_Layout_and_Styling_Debugging_with_React]] - Debugging layout and CSS in React apps
+13. [[04_State_Management_Beyond_Redux_Toolkit_Zustand_and_Friends]] - Zustand, Jotai, and alternatives
+14. [[06_Security_and_Auth_Patterns_in_React_Apps]] - XSS prevention, auth flows, route protection
+15. [[07_React_Beyond_Web_React_Native_and_Ecosystem]] - Mobile, desktop, and cross-platform React
 
 **Practice Projects:**
 - [[02_Form_Heavy_App_With_Validation]] - Complex forms
@@ -186,6 +201,28 @@ Is it derived? → useMemo
 | Context re-renders | Split contexts | why-did-you-render | Low | Medium |
 | Slow images | Lazy loading, WebP | Lighthouse | Low | Medium |
 | Redux selectors | createSelector | Redux DevTools | Low | Medium |
+
+---
+
+### Memoization & Rerender Quick Reference
+
+| Tool | What It Does | When to Use | File |
+|------|-------------|-------------|------|
+| `React.memo` | Prevents component re-render when props haven't changed | Expensive child that re-renders with same props from a re-rendering parent | [[05_Memoization_and_Rerenders_Mental_Model]] |
+| `useMemo` | Caches a computed value between renders | Expensive calculations (sort, filter, transform) | [[05_Memoization_and_Rerenders_Mental_Model]] |
+| `useCallback` | Caches a function reference between renders | Passing callbacks to `memo`ized children or as effect deps | [[05_Memoization_and_Rerenders_Mental_Model]] |
+| State colocation | Move state closer to where it's consumed | A state change causes too many unrelated branches to re-render | [[01_Debug_Rerenders_and_Perf_Issues]] |
+| Context splitting | Split one large context into several smaller ones | Context value changes cause wide re-renders | [[03_React_App_Architecture_Playbook]] |
+
+**When NOT to memoize:**
+- The component/calculation is cheap (takes <0.1ms).
+- Props change every render anyway (inline objects without `useMemo`).
+- Before measuring — always profile first.
+
+**Troubleshooting:** If `React.memo` doesn't stop re-renders, check:
+1. Are props creating new references each render? (inline functions/objects)
+2. Is a context provider above re-rendering?
+3. Use `React DevTools Profiler` to verify the component is truly skipped.
 
 ---
 
@@ -345,28 +382,37 @@ const ExpensiveComponent = React.memo(({ data }) => {
 
 ## Complete Topic Organization
 
-### 01_Foundations (3 files, 5,533 lines)
-1. [[01_React_Mental_Model_and_Rendering]] (1,806 lines)
+### 01_Foundations (5 files)
+1. [[04_React_Basics_Components_Props_and_State]]
+   - JSX, components, props, state, lifting state, mini-project
+   - Beginner on-ramp with no prior React knowledge assumed
+
+2. [[01_React_Mental_Model_and_Rendering]] (1,806 lines)
    - How React works under the hood
    - Rendering behavior
    - Reconciliation
    - 8 interview questions
 
-2. [[02_Hooks_Complete_Reference]] (2,317 lines)
+3. [[02_Hooks_Complete_Reference]] (2,317 lines)
    - All 13 React hooks
    - Custom hooks patterns
    - Best practices
    - 8 interview questions
 
-3. [[03_State_and_Effects_Common_Pitfalls]] (1,410 lines)
+4. [[03_State_and_Effects_Common_Pitfalls]] (1,410 lines)
    - useState pitfalls
    - useEffect pitfalls
    - Solutions and patterns
    - 8 interview questions
 
+5. [[05_Memoization_and_Rerenders_Mental_Model]]
+   - React.memo, useMemo, useCallback mental model
+   - When to memoize and when not to
+   - Performance decision flowchart
+
 ---
 
-### 02_Core (4 files, 7,428 lines)
+### 02_Core (6 files)
 1. [[01_Redux_Toolkit_Essentials]] (2,150 lines)
    - Store setup
    - Slices and reducers
@@ -391,9 +437,19 @@ const ExpensiveComponent = React.memo(({ data }) => {
    - Form patterns
    - 8 interview questions
 
+5. [[05_Accessibility_and_A11y_Testing_in_React]]
+   - WCAG basics, semantic HTML, keyboard nav, focus management
+   - Accessible forms, live regions, portals
+   - jest-axe testing, manual a11y checklist
+
+6. [[06_Layout_and_Styling_Debugging_with_React]]
+   - React components vs DOM vs CSS
+   - Common layout patterns, Tailwind structure
+   - Debugging layout thrash and performance
+
 ---
 
-### 03_Advanced (3 files, 6,475 lines)
+### 03_Advanced (7 files)
 1. [[01_Testing_React_TL_and_MSW]] (2,737 lines)
    - Testing Library
    - MSW setup
@@ -411,6 +467,26 @@ const ExpensiveComponent = React.memo(({ data }) => {
    - Architecture patterns
    - Best practices
    - 8 interview questions
+
+4. [[04_State_Management_Beyond_Redux_Toolkit_Zustand_and_Friends]]
+   - Zustand, Jotai alternatives
+   - When to stick with RTK vs when to go lighter
+   - Comparison tables, trade-offs
+
+5. [[05_Concurrent_React_Suspense_and_Transitions]]
+   - Suspense for code-splitting and data fetching
+   - useTransition, useDeferredValue
+   - Combining with Error Boundaries and Server Components
+
+6. [[06_Security_and_Auth_Patterns_in_React_Apps]]
+   - XSS prevention, safe HTML/URL handling
+   - Cookie vs token auth flows
+   - Route protection, CSRF mitigation
+
+7. [[07_React_Beyond_Web_React_Native_and_Ecosystem]]
+   - React Native mental model
+   - Electron/Tauri, code sharing patterns
+   - When to use cross-platform React
 
 ---
 
@@ -585,11 +661,11 @@ Each guide has 8 interview questions. Total: **72 questions across 9 guides**.
 
 ## Statistics
 
-- **Total Files:** 24 comprehensive guides + 1 MOC
-- **Total Lines:** ~30,000
+- **Total Files:** 31 comprehensive guides + 1 MOC
+- **Total Lines:** ~35,000
 - **Total Interview Questions:** ~80 (8 per guide × 10+ guides)
-- **Code Examples:** 500+
-- **Diagrams:** 50+ Mermaid diagrams
+- **Code Examples:** 600+
+- **Diagrams:** 70+ Mermaid diagrams
 - **Complete Projects:** 3
 - **Debugging Workflows:** 3
 - **Playbooks:** 10 (including Animation + E2E + Tailwind + Real-Time)
@@ -600,11 +676,19 @@ Each guide has 8 interview questions. Total: **72 questions across 9 guides**.
 
 This is a living document. Update dates and add new content as React evolves.
 
-**Last Major Update:** 2026-05-09
-- ✅ All 24 files completed
+**Last Major Update:** 2026-05-28
+- ✅ All 31 files completed
 - ✅ React 18/19 patterns
 - ✅ TypeScript-first approach
 - ✅ Production-ready examples
+- ✅ Beginner on-ramp (React Basics)
+- ✅ Memoization mental model (React.memo, useMemo, useCallback)
+- ✅ Accessibility and a11y testing (jest-axe, WCAG)
+- ✅ Layout debugging with React
+- ✅ State management alternatives (Zustand, Jotai)
+- ✅ Concurrent React, Suspense, and Transitions
+- ✅ Security and auth patterns (XSS, CSRF, tokens)
+- ✅ React Native and cross-platform React
 - ✅ Animation (Framer Motion)
 - ✅ E2E Testing (Playwright)
 - ✅ Real-Time patterns (WebSocket)

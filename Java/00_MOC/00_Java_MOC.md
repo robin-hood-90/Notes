@@ -2,13 +2,13 @@
 tags: [java, moc, index, learning-path]
 aliases: ["Java MOC", "Java Index", "Java Learning Path"]
 status: stable
-updated: 2026-05-11
+updated: 2026-05-28
 ---
 
 # Java
 
 > [!summary] Scope
-> Complete Java reference from language fundamentals through JVM internals, concurrency, performance, and modern features (records, sealed classes, virtual threads, pattern matching). Covers Core Java, build tools, testing, and JVM tooling.
+> Complete Java reference from language fundamentals through JVM internals, concurrency, performance, and modern features (records, sealed classes, virtual threads, pattern matching). Covers date/time/money, logging, configuration, persistence (JDBC, JPA, jOOQ), i18n, reactive streams, security/TLS/crypto, observability (metrics, tracing), packaging (jlink, native image), and production operations.
 
 ## Learning Path
 
@@ -35,6 +35,17 @@ flowchart TD
     R --> T["Reflection & Annotations"]
     N --> U["Networking & HTTP Client"]
     T --> V["Foreign Function & Memory API"]
+    A --> W["Date, Time & Money"]
+    A --> X["Logging Basics"]
+    A --> Y["Configuration & CLI"]
+    O --> Z["ORM / jOOQ"]
+    H & M --> AA["Reactive & Flow API"]
+    A --> AB["Internationalization"]
+    W --> AB
+    U --> AC["Security, TLS & Crypto"]
+    A & O & P --> AD["Java in Production Services"]
+    AD --> AE["Observability & Telemetry"]
+    Q & AD --> AF["Packaging & Runtime Images"]
     style A fill:#e1f5ff
     style H fill:#fff4cc
     style M fill:#d9f7d6
@@ -51,6 +62,9 @@ flowchart TD
 | **F05** [[Java/01_Foundations/05_Modern_Java_Language_Features]] | Records, sealed classes, pattern matching (`instanceof`, `switch`), text blocks, `var`, enhanced `switch`, useful `null` APIs |
 | **F06** [[Java/01_Foundations/06_Build_Tools_Maven_Gradle]] | Maven lifecycle, POM, dependencies, plugins; Gradle tasks, Kotlin DSL, multi-project builds; comparison table |
 | **F07** [[Java/01_Foundations/07_Testing_with_JUnit_and_Mockito]] | JUnit 5 (lifecycle, assertions, parameterized), Mockito (`@Mock`, `verify`, argument captors), Testcontainers, coverage |
+| **F08** [[Java/01_Foundations/08_Date_Time_and_Money]] | `java.time` types, time zones, formatting, `Duration`/`Period`, money with `BigDecimal`, rounding, `Clock` for testability |
+| **F09** [[Java/01_Foundations/09_Logging_Basics_for_Java]] | SLF4J façade, log levels, Logback configuration, structured logging, MDC, logging in libraries vs applications |
+| **F10** [[Java/01_Foundations/10_Configuration_and_CLI_Basics]] | Config sources and precedence, properties/YAML loading, CLI parsing (picocli), immutable config objects, secrets handling |
 
 ## Core
 
@@ -60,6 +74,10 @@ flowchart TD
 | **C02** [[Java/02_Core/02_JVM_Memory_and_GC_Basics]] | Heap (young/old/metaspace), stack, GC roots, stop-the-world, GC algorithms (mark-sweep, mark-compact, copying), JVM flags, OOM analysis |
 | **C03** [[Java/02_Core/03_IO_NIO_and_Serialization]] | `InputStream`/`OutputStream` hierarchy, `Reader`/`Writer`, `File`, NIO channels, `ByteBuffer`, `Selector`, `Path`/`Files`, serialization (`ObjectOutputStream`, `readResolve`, `serialVersionUID`) |
 | **C04** [[Java/02_Core/04_Database_Access_JDBC]] | Connection lifecycle, `Statement`/`PreparedStatement`/`CallableStatement`, `ResultSet`, transactions, connection pooling (HikariCP), JOOQ vs JDBC vs JPA |
+| **C05** [[Java/02_Core/05_Persistence_Beyond_JDBC_ORM_and_JOOQ]] | JPA/Hibernate entities, persistence context, lazy loading, jOOQ type-safe SQL, JDBC vs JPA vs jOOQ decision guide |
+| **C06** [[Java/02_Core/06_Reactive_and_Flow_API]] | `java.util.concurrent.Flow` (Publisher/Subscriber/Subscription), backpressure, `SubmissionPublisher`, comparison with threads/Loom/futures |
+| **C07** [[Java/02_Core/07_Internationalization_and_Localization]] | `Locale`, `ResourceBundle`, formatting numbers/dates/currencies, charsets and Unicode, plural rules |
+| **C08** [[Java/02_Core/08_Java_in_Production_Services]] | Health checks, graceful shutdown, config/secrets in prod, logs/metrics/traces, deployment options, service lifecycle |
 
 ## Advanced
 
@@ -77,6 +95,9 @@ flowchart TD
 | **A10** [[Java/03_Advanced/10_Foreign_Function_and_Memory_API]] | `MemorySegment`, `MemoryLayout`, `Linker`, `SymbolLookup`, downcall handles, upcall stubs, replacing JNI |
 | **A11** [[Java/03_Advanced/11_Networking_and_HTTP_Client]] | `HttpClient` (sync/async), `WebSocket`, `ServerSocketChannel`, `Selector`, non-blocking I/O, HTTP/2 support |
 | **A12** [[Java/03_Advanced/12_Atomics_CAS_and_VarHandle]] | CAS hardware (CMPXCHG, LL/SC), all atomic classes, `LongAdder`/`Striped64`, ABA problem, `VarHandle` memory ordering modes, false sharing `@Contended` |
+| **A13** [[Java/03_Advanced/13_Java_Security_TLS_and_Cryptography]] | JSSE, KeyStore/TrustStore, TLS on client and server, mTLS, JCE (hash, symmetric, asymmetric), password hashing, serialization security |
+| **A14** [[Java/03_Advanced/14_Observability_and_Telemetry_in_Java]] | Structured JSON logging, Micrometer metrics, OpenTelemetry tracing, correlation IDs, JFR integration, incremental adoption |
+| **A15** [[Java/03_Advanced/15_Java_Packaging_and_Runtime_Images]] | Fat JAR, layered JAR for containers, jlink custom runtime, jpackage installers, GraalVM native image comparison, container optimizations |
 
 ## Playbooks
 
