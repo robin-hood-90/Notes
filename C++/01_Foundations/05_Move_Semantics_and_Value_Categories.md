@@ -442,7 +442,8 @@ public:
 
 ## Cross-Links
 
-- [[C++/01_Foundations/02_Classes_and_RAII]] for class fundamentals
+- [[C++/01_Foundations/02_Classes_and_RAII]] for class fundamentals, RAII, and Rule of Five
+- [[C++/01_Foundations/10_Good_Coding_Practices]] for coding conventions
 - [[C++/01_Foundations/04_Operator_Overloading_and_Type_Casting]] for move assignment operator
 - [[C++/02_Core/01_Smart_Pointers_and_Memory_Management]] for unique_ptr (move-only type)
 - [[C++/02_Core/08_Undefined_Behavior_and_Low_Level_Cpp]] for moving from const

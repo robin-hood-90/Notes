@@ -20,7 +20,8 @@ updated: 2026-05-09
 6. [`this` Pointer and `const` Member Functions](#this-pointer-and-const-member-functions)
 7. [`static` Members](#static-members)
 8. [`= default` and `= delete`](#default-and-delete)
-9. [Pitfalls](#pitfalls)
+9. [Rule of Five (Copy-and-Swap)](#rule-of-five-copy-and-swap)
+10. [Pitfalls](#pitfalls)
 
 ---
 
@@ -403,6 +404,101 @@ public:
 
 ---
 
+## Rule of Five (Copy-and-Swap)
+
+> [!info] Rule of Five
+> If a class manages a resource directly (raw pointer, file handle, OS resource), it needs all five special member functions: destructor, copy constructor, copy assignment, move constructor, and move assignment. The **copy-and-swap** idiom provides a unified, exception-safe implementation for copy and move assignment.
+
+For most classes, **Rule of Zero** (use RAII wrappers — `vector`, `string`, `unique_ptr` — and let the compiler generate defaults) is the goal. But when you must manage a resource directly, apply Rule of Five with copy-and-swap.
+
+### Copy-and-Swap Idiom
+
+The core idea: implement `swap()` as a non-throwing friend, then write **one** assignment operator that takes by value and swaps:
+
+```cpp
+class Buffer {
+    int* data;
+    size_t size;
+public:
+    // Constructor
+    explicit Buffer(size_t n) : data(new int[n]), size(n) {}
+
+    // Destructor
+    ~Buffer() { delete[] data; }
+
+    // Copy constructor
+    Buffer(const Buffer& other)
+        : data(new int[other.size]), size(other.size) {
+        std::copy(other.data, other.data + other.size, data);
+    }
+
+    // Move constructor — noexcept is critical for std::vector
+    Buffer(Buffer&& other) noexcept : data(nullptr), size(0) {
+        swap(other);
+    }
+
+    // Copy-and-swap assignment — ONE operator handles both copy and move!
+    Buffer& operator=(Buffer other) noexcept {   // Take by value (copy or move)
+        swap(other);                              // Swap with the temporary
+        return *this;                             // Temporary dies, releases old
+    }
+
+    friend void swap(Buffer& a, Buffer& b) noexcept {
+        using std::swap;
+        swap(a.data, b.data);
+        swap(a.size, b.size);
+    }
+};
+```
+
+```mermaid
+sequenceDiagram
+    participant LHS as lhs (existing)
+    participant RHS as rhs (argument, taken by value)
+    participant TMP as temp (old lhs data)
+
+    LHS->>RHS: operator=(other) — other is copy/moved into rhs
+    Note over RHS: rhs holds a deep copy (or moved-from) of other
+    LHS->>RHS: swap(lhs, rhs)
+    Note over LHS: lhs now holds rhs's data
+    Note over RHS: rhs now holds lhs's OLD data
+    RHS->>TMP: rhs destroyed → old lhs data freed
+```
+
+### Why copy-and-swap wins
+
+| Concern | Naive assignment | Copy-and-swap |
+|---------|:----------------:|:-------------:|
+| Strong exception guarantee | ❌ Must hand-roll | ✅ Automatic |
+| Self-assignment safety | ❌ Need explicit `if (this != &other)` | ✅ Automatic (self-swap is safe) |
+| Code duplication | ❌ Separate copy=, move= | ✅ One function for both |
+| `const` correctness | ❌ Often forgets | ✅ Natural |
+
+### noexcept on move operations
+
+```cpp
+class Widget {
+    std::vector<int> data;
+public:
+    // Move constructor must be noexcept for std::vector to use it
+    // during reallocation (otherwise vector copies, which is slower)
+    Widget(Widget&& other) noexcept : data(std::move(other.data)) {}
+
+    // Move assignment
+    Widget& operator=(Widget&& other) noexcept {
+        if (this != &other) { data = std::move(other.data); }
+        return *this;
+    }
+};
+```
+
+`std::vector` uses `std::move_if_noexcept` — if the move constructor is `noexcept`, elements are moved during reallocation. If it might throw, elements are **copied** (safe but slow). Always mark move operations `noexcept`.
+
+> [!tip] Cross-reference
+> For a deeper treatment of Rule of Five, Rule of Zero, and move semantics, see [[C++/01_Foundations/05_Move_Semantics_and_Value_Categories#rule-of-five-and-rule-of-zero|Move Semantics → Rule of Five]].
+
+---
+
 ## Pitfalls
 
 ### Forgetting to define a virtual destructor
@@ -460,7 +556,8 @@ int main() {}   // ❌ Compiler sees: class MyClass { } int main() {} — syntax
 ## Cross-Links
 
 - [[C++/01_Foundations/03_Inheritance_Polymorphism_and_Virtual_Functions]] for virtual destructors
-- [[C++/01_Foundations/05_Move_Semantics_and_Value_Categories]] for move constructors
+- [[C++/01_Foundations/05_Move_Semantics_and_Value_Categories]] for move constructors and Rule of Five
+- [[C++/01_Foundations/10_Good_Coding_Practices]] for coding conventions and `const` correctness
 - [[C++/02_Core/01_Smart_Pointers_and_Memory_Management]] for RAII with smart pointers
 - [[C++/01_Foundations/07_Exception_Handling_and_Safety]] for exception-safe RAII
 - [[C++/03_Advanced/08_Game_Engine_and_Driver_Dev]] for RAII in game engines

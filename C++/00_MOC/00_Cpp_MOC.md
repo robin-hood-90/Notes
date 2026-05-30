@@ -46,7 +46,7 @@ flowchart TD
 
 | Tier | Files | Topics |
 |:----|:-----:|--------|
-| **Foundations** | 9 | C++ vs C, classes/RAII, inheritance/virtual, operator overloading/casts, move semantics/value categories, templates (variadic, fold), exceptions/safety, lambdas/functional, **attributes/consteval/constinit** |
+| **Foundations** | 10 | C++ vs C, classes/RAII, inheritance/virtual, operator overloading/casts, move semantics/value categories, templates (variadic, fold), exceptions/safety, lambdas/functional, attributes/consteval/constinit, **good coding practices** |
 | **Core** | 10 | Smart pointers/allocators, STL containers deep dive, algorithms/ranges, iterators/categories, concurrency/async/parallel, file I/O/filesystem, atomics/lock-free, UB/object lifetimes, **optional/chrono/format**, **random/regex** |
 | **Advanced** | 9 | Template metaprogramming/SFINAE, concepts (C++20), coroutines, CRTP/mixins, type erasure/patterns, modules/C++20/23 features, performance/cache, game engine/driver dev, **PMR/jthread/C++20 sync** |
 | **Playbooks** | 4 | Debug memory (ASan/Valgrind/glibcxx debug), debug concurrency (TSan/Helgrind), **debug compile time/template errors**, production readiness/ABI |

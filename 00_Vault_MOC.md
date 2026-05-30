@@ -41,6 +41,7 @@ updated: 2026-05-11
 16. [[Rust/00_MOC/00_Rust_MOC]]
 17. [[C/00_MOC/00_C_MOC]]
 18. [[C++/00_MOC/00_Cpp_MOC]]
+19. [[Python/00_MOC/00_Python_MOC]]
 
 ---
 
