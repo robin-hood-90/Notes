@@ -744,7 +744,6 @@ public class FenwickTree {
 
 ---
 
-*Continue with remaining sections...*
 
 ## Section F: Trie and Suffix Structures
 
@@ -888,7 +887,256 @@ public class Trie {
 
 ---
 
-*Continue with remaining implementations...*
+### F.2 Compressed Trie
+
+**Concept:** Compress chains of single-child nodes into one edge label (Radix Tree).
+
+```java
+import java.util.*;
+
+public class CompressedTrie {
+
+    static final class Node {
+        // Edge labels are stored on outgoing edges.
+        final Map<Character, Edge> next = new HashMap<>();
+        boolean terminal;
+    }
+
+    static final class Edge {
+        String label;
+        Node child;
+        Edge(String label, Node child) {
+            this.label = label;
+            this.child = child;
+        }
+    }
+
+    final Node root = new Node();
+
+    public void insert(String s) {
+        if (s.isEmpty()) {
+            root.terminal = true;
+            return;
+        }
+        var cur = root;
+        var i = 0;
+        while (i < s.length()) {
+            var ch = s.charAt(i);
+            var e = cur.next.get(ch);
+            if (e == null) {
+                var leaf = new Node();
+                leaf.terminal = true;
+                cur.next.put(ch, new Edge(s.substring(i), leaf));
+                return;
+            }
+
+            var label = e.label;
+            var j = 0;
+            while (i + j < s.length() && j < label.length() && s.charAt(i + j) == label.charAt(j)) {
+                j++;
+            }
+
+            if (j == label.length()) {
+                cur = e.child;
+                i += j;
+                continue;
+            }
+
+            // Split edge at position j.
+            var mid = new Node();
+            var oldSuffix = label.substring(j);
+            var oldChild = e.child;
+
+            e.label = label.substring(0, j);
+            e.child = mid;
+
+            mid.next.put(oldSuffix.charAt(0), new Edge(oldSuffix, oldChild));
+
+            if (i + j == s.length()) {
+                mid.terminal = true;
+            } else {
+                var newSuffix = s.substring(i + j);
+                var leaf = new Node();
+                leaf.terminal = true;
+                mid.next.put(newSuffix.charAt(0), new Edge(newSuffix, leaf));
+            }
+            return;
+        }
+        cur.terminal = true;
+    }
+
+    public boolean contains(String s) {
+        var cur = root;
+        var i = 0;
+        while (i < s.length()) {
+            var e = cur.next.get(s.charAt(i));
+            if (e == null) return false;
+            var label = e.label;
+            if (i + label.length() > s.length()) return false;
+            for (var j = 0; j < label.length(); j++) {
+                if (s.charAt(i + j) != label.charAt(j)) return false;
+            }
+            i += label.length();
+            cur = e.child;
+        }
+        return cur.terminal;
+    }
+
+    public boolean startsWith(String prefix) {
+        var cur = root;
+        var i = 0;
+        while (i < prefix.length()) {
+            var e = cur.next.get(prefix.charAt(i));
+            if (e == null) return false;
+            var label = e.label;
+            var rem = prefix.length() - i;
+            var take = Math.min(rem, label.length());
+            for (var j = 0; j < take; j++) {
+                if (prefix.charAt(i + j) != label.charAt(j)) return false;
+            }
+            i += take;
+            if (take < label.length()) return true; // prefix ends in middle of an edge label
+            cur = e.child;
+        }
+        return true;
+    }
+}
+```
+
+---
+
+### F.3 Suffix Trie
+
+**Concept:** Insert all suffixes of a string into a trie (O(n^2) build). Good for teaching; for production CP, prefer suffix array/automaton.
+
+```java
+import java.util.*;
+
+public class SuffixTrie {
+    static final class Node {
+        final Map<Character, Node> next = new HashMap<>();
+    }
+
+    final Node root = new Node();
+
+    public void build(String s) {
+        for (var i = 0; i < s.length(); i++) {
+            var cur = root;
+            for (var j = i; j < s.length(); j++) {
+                var ch = s.charAt(j);
+                cur = cur.next.computeIfAbsent(ch, k -> new Node());
+            }
+        }
+    }
+
+    public boolean containsSubstring(String p) {
+        var cur = root;
+        for (var i = 0; i < p.length(); i++) {
+            cur = cur.next.get(p.charAt(i));
+            if (cur == null) return false;
+        }
+        return true;
+    }
+}
+```
+
+---
+
+### F.4 Suffix Array
+
+**Concept:** Sort all suffixes; enables fast substring queries via binary search; LCP array enables many string queries.
+
+```java
+import java.util.*;
+
+public class SuffixArray {
+
+    // O(n log n) doubling algorithm
+    public static int[] build(String s) {
+        var n = s.length();
+        var sa = new int[n];
+        var rnk = new int[n];
+        for (var i = 0; i < n; i++) {
+            sa[i] = i;
+            rnk[i] = s.charAt(i);
+        }
+        var tmp = new int[n];
+
+        for (int k = 1;; k <<= 1) {
+            final int kk = k;
+            Arrays.sort(sa, (a, b) -> {
+                if (rnk[a] != rnk[b]) return Integer.compare(rnk[a], rnk[b]);
+                var ra = (a + kk < n) ? rnk[a + kk] : -1;
+                var rb = (b + kk < n) ? rnk[b + kk] : -1;
+                return Integer.compare(ra, rb);
+            });
+
+            tmp[sa[0]] = 0;
+            for (var i = 1; i < n; i++) {
+                var a = sa[i - 1];
+                var b = sa[i];
+                var diff = rnk[a] != rnk[b];
+                var ra = (a + kk < n) ? rnk[a + kk] : -1;
+                var rb = (b + kk < n) ? rnk[b + kk] : -1;
+                diff |= ra != rb;
+                tmp[b] = tmp[a] + (diff ? 1 : 0);
+            }
+            System.arraycopy(tmp, 0, rnk, 0, n);
+            if (rnk[sa[n - 1]] == n - 1) break;
+        }
+        return sa;
+    }
+
+    // Kasai: lcp[i] = LCP(sa[i], sa[i-1]) for i>=1
+    public static int[] lcpArray(String s, int[] sa) {
+        var n = s.length();
+        var rank = new int[n];
+        for (var i = 0; i < n; i++) rank[sa[i]] = i;
+        var lcp = new int[n];
+        for (int i = 0, h = 0; i < n; i++) {
+            var r = rank[i];
+            if (r == 0) continue;
+            var j = sa[r - 1];
+            while (i + h < n && j + h < n && s.charAt(i + h) == s.charAt(j + h)) h++;
+            lcp[r] = h;
+            if (h > 0) h--;
+        }
+        return lcp;
+    }
+
+    // substring check via SA binary search
+    public static boolean contains(String s, int[] sa, String p) {
+        int l = 0, r = sa.length;
+        while (l < r) {
+            var m = (l + r) >>> 1;
+            if (cmpSuffixWithPattern(s, sa[m], p) < 0) l = m + 1;
+            else r = m;
+        }
+        if (l == sa.length) return false;
+        return startsWith(s, sa[l], p);
+    }
+
+    private static int cmpSuffixWithPattern(String s, int si, String p) {
+        var n = s.length();
+        var m = p.length();
+        for (var k = 0; k < m && si + k < n; k++) {
+            var a = s.charAt(si + k);
+            var b = p.charAt(k);
+            if (a != b) return Character.compare(a, b);
+        }
+        if (si + m <= n) return 0; // pattern exhausted
+        return -1; // suffix exhausted and equal so far
+    }
+
+    private static boolean startsWith(String s, int si, String p) {
+        if (si + p.length() > s.length()) return false;
+        for (var k = 0; k < p.length(); k++) {
+            if (s.charAt(si + k) != p.charAt(k)) return false;
+        }
+        return true;
+    }
+}
+```
 
 ## Section I: Caches
 
@@ -918,60 +1166,83 @@ key3 -> Node
  * Uses HashMap for O(1) lookup and Doubly Linked List for O(1) eviction.
  */
 public class LRUCache<K, V> {
-    
+
+    private static final class Node<K, V> {
+        K key;
+        V val;
+        Node<K, V> prev, next;
+        Node(K key, V val) { this.key = key; this.val = val; }
+    }
+
     private final int capacity;
-    private final Map<K, Node> cache;
-    private final DoublyLinkedList<K, V> list;
-    
-    private record Node<K, V>(K key, V value) {}
-    
+    private final Map<K, Node<K, V>> map;
+    private final Node<K, V> head;
+    private final Node<K, V> tail;
+
     public LRUCache(int capacity) {
-        if (capacity <= 0) {
-            throw new IllegalArgumentException("Capacity must be positive");
-        }
+        if (capacity <= 0) throw new IllegalArgumentException("Capacity must be positive");
         this.capacity = capacity;
-        this.cache = new HashMap<>();
-        this.list = new DoublyLinkedList<>();
+        this.map = new HashMap<>();
+        this.head = new Node<>(null, null); // MRU side
+        this.tail = new Node<>(null, null); // LRU side
+        head.next = tail;
+        tail.prev = head;
     }
-    
-    /**
-     * Get value by key. O(1) time.
-     */
+
     public V get(K key) {
-        if (!cache.containsKey(key)) {
-            return null;
-        }
-        
-        // Move to front (most recently used)
-        var node = cache.get(key);
-        list.remove(node);
-        list.addFirst(node);
-        
-        return node.value();
+        var n = map.get(key);
+        if (n == null) return null;
+        moveToFront(n);
+        return n.val;
     }
-    
-    /**
-     * Put key-value pair. O(1) time.
-     */
+
     public void put(K key, V value) {
-        if (cache.containsKey(key)) {
-            // Update existing
-            var node = cache.get(key);
-            list.remove(node);
-        } else if (cache.size() >= capacity) {
-            // Evict least recently used
-            var lru = list.removeLast();
-            cache.remove(lru.key());
+        var n = map.get(key);
+        if (n != null) {
+            n.val = value;
+            moveToFront(n);
+            return;
         }
-        
-        var newNode = new Node<>(key, value);
-        list.addFirst(newNode);
-        cache.put(key, newNode);
+
+        if (map.size() >= capacity) {
+            var lru = removeLast();
+            if (lru != null) map.remove(lru.key);
+        }
+
+        var nn = new Node<>(key, value);
+        addFirst(nn);
+        map.put(key, nn);
     }
-    
-    public int size() { return cache.size(); }
-    public boolean isEmpty() { return cache.isEmpty(); }
-    public boolean containsKey(K key) { return cache.containsKey(key); }
+
+    private void addFirst(Node<K, V> n) {
+        n.next = head.next;
+        n.prev = head;
+        head.next.prev = n;
+        head.next = n;
+    }
+
+    private void remove(Node<K, V> n) {
+        n.prev.next = n.next;
+        n.next.prev = n.prev;
+        n.prev = null;
+        n.next = null;
+    }
+
+    private void moveToFront(Node<K, V> n) {
+        remove(n);
+        addFirst(n);
+    }
+
+    private Node<K, V> removeLast() {
+        if (tail.prev == head) return null;
+        var n = tail.prev;
+        remove(n);
+        return n;
+    }
+
+    public int size() { return map.size(); }
+    public boolean isEmpty() { return map.isEmpty(); }
+    public boolean containsKey(K key) { return map.containsKey(key); }
 }
 ```
 
@@ -1218,7 +1489,263 @@ public class UnionFind {
 
 ---
 
+### H.2 Union-Find with Rollback
+
+**Concept:** Supports undoing unions back to a snapshot (offline dynamic connectivity, divide-and-conquer on time).
+
+```java
+import java.util.*;
+
+public class RollbackDSU {
+    final int[] parent;
+    final int[] size;
+    int components;
+    final ArrayDeque<int[]> st = new ArrayDeque<>(); // {aParent, bParent, sizeA, mergedFlag}
+
+    public RollbackDSU(int n) {
+        parent = new int[n];
+        size = new int[n];
+        components = n;
+        for (var i = 0; i < n; i++) { parent[i] = i; size[i] = 1; }
+    }
+
+    public int find(int x) {
+        while (parent[x] != x) x = parent[x];
+        return x;
+    }
+
+    public int snapshot() {
+        return st.size();
+    }
+
+    public void rollback(int snap) {
+        while (st.size() > snap) {
+            var e = st.pop();
+            if (e[3] == 0) continue;
+            var a = e[0];
+            var b = e[1];
+            parent[b] = b;
+            size[a] = e[2];
+            components++;
+        }
+    }
+
+    public boolean union(int x, int y) {
+        x = find(x);
+        y = find(y);
+        if (x == y) {
+            st.push(new int[]{0, 0, 0, 0});
+            return false;
+        }
+        if (size[x] < size[y]) { var t = x; x = y; y = t; }
+        // save state: x keeps parent, y becomes child
+        st.push(new int[]{x, y, size[x], 1});
+        parent[y] = x;
+        size[x] += size[y];
+        components--;
+        return true;
+    }
+}
+```
+
+---
+
+### H.3 Bloom Filter
+
+**Concept:** Probabilistic set: no false negatives, possible false positives.
+
+```java
+import java.util.*;
+
+public class BloomFilter {
+    final long[] bits;
+    final int m;   // number of bits
+    final int k;   // number of hashes
+
+    public BloomFilter(int mBits, int kHashes) {
+        if (mBits <= 0 || kHashes <= 0) throw new IllegalArgumentException();
+        this.m = mBits;
+        this.k = kHashes;
+        this.bits = new long[(mBits + 63) >>> 6];
+    }
+
+    public void add(String s) {
+        var h = hash64(s);
+        var h1 = (int) h;
+        var h2 = (int) (h >>> 32);
+        if (h2 == 0) h2 = 0x9E3779B9;
+        for (var i = 0; i < k; i++) {
+            var idx = (int) ((h1 + (long) i * h2) % m);
+            if (idx < 0) idx += m;
+            setBit(idx);
+        }
+    }
+
+    public boolean mightContain(String s) {
+        var h = hash64(s);
+        var h1 = (int) h;
+        var h2 = (int) (h >>> 32);
+        if (h2 == 0) h2 = 0x9E3779B9;
+        for (var i = 0; i < k; i++) {
+            var idx = (int) ((h1 + (long) i * h2) % m);
+            if (idx < 0) idx += m;
+            if (!getBit(idx)) return false;
+        }
+        return true;
+    }
+
+    private void setBit(int i) {
+        bits[i >>> 6] |= 1L << (i & 63);
+    }
+
+    private boolean getBit(int i) {
+        return (bits[i >>> 6] & (1L << (i & 63))) != 0;
+    }
+
+    // FNV-1a 64-bit
+    private static long hash64(String s) {
+        long h = 0xcbf29ce484222325L;
+        for (int i = 0; i < s.length(); i++) {
+            h ^= (byte) s.charAt(i);
+            h *= 0x100000001b3L;
+        }
+        // final mix
+        h ^= (h >>> 33);
+        h *= 0xff51afd7ed558ccdL;
+        h ^= (h >>> 33);
+        h *= 0xc4ceb9fe1a85ec53L;
+        h ^= (h >>> 33);
+        return h;
+    }
+}
+```
+
+---
+
+### H.4 Skip List
+
+**Concept:** Multi-level linked list with probabilistic balancing (expected O(log n)).
+
+```java
+import java.util.*;
+
+public class IntSkipList {
+    static final class Node {
+        int key;
+        Node[] next;
+        Node(int key, int level) {
+            this.key = key;
+            this.next = new Node[level];
+        }
+    }
+
+    final Random rng;
+    final int maxLevel;
+    final double p;
+    final Node head;
+    int level;
+
+    public IntSkipList(int maxLevel, double p, long seed) {
+        this.maxLevel = Math.max(1, maxLevel);
+        this.p = p;
+        this.rng = new Random(seed);
+        this.head = new Node(Integer.MIN_VALUE, this.maxLevel);
+        this.level = 1;
+    }
+
+    public boolean contains(int key) {
+        var cur = head;
+        for (var i = level - 1; i >= 0; i--) {
+            while (cur.next[i] != null && cur.next[i].key < key) cur = cur.next[i];
+        }
+        cur = cur.next[0];
+        return cur != null && cur.key == key;
+    }
+
+    public void add(int key) {
+        var update = new Node[maxLevel];
+        var cur = head;
+        for (var i = level - 1; i >= 0; i--) {
+            while (cur.next[i] != null && cur.next[i].key < key) cur = cur.next[i];
+            update[i] = cur;
+        }
+        cur = cur.next[0];
+        if (cur != null && cur.key == key) return;
+
+        var lv = randomLevel();
+        if (lv > level) {
+            for (var i = level; i < lv; i++) update[i] = head;
+            level = lv;
+        }
+        var n = new Node(key, lv);
+        for (var i = 0; i < lv; i++) {
+            n.next[i] = update[i].next[i];
+            update[i].next[i] = n;
+        }
+    }
+
+    public boolean remove(int key) {
+        var update = new Node[maxLevel];
+        var cur = head;
+        for (var i = level - 1; i >= 0; i--) {
+            while (cur.next[i] != null && cur.next[i].key < key) cur = cur.next[i];
+            update[i] = cur;
+        }
+        cur = cur.next[0];
+        if (cur == null || cur.key != key) return false;
+        for (var i = 0; i < level; i++) {
+            if (update[i].next[i] != cur) break;
+            update[i].next[i] = cur.next[i];
+        }
+        while (level > 1 && head.next[level - 1] == null) level--;
+        return true;
+    }
+
+    private int randomLevel() {
+        var lv = 1;
+        while (lv < maxLevel && rng.nextDouble() < p) lv++;
+        return lv;
+    }
+}
+```
+
+---
+
 ## Section G: Graph Representations
+
+---
+
+### G.1 Graph (Adjacency Matrix)
+
+```java
+import java.util.*;
+
+public class GraphMatrix {
+    public static final int INF = 1_000_000_000;
+    final int n;
+    final int[][] w;
+    final boolean directed;
+
+    public GraphMatrix(int n, boolean directed) {
+        this.n = n;
+        this.directed = directed;
+        this.w = new int[n][n];
+        for (var i = 0; i < n; i++) {
+            Arrays.fill(w[i], INF);
+            w[i][i] = 0;
+        }
+    }
+
+    public void addEdge(int u, int v, int weight) {
+        w[u][v] = Math.min(w[u][v], weight);
+        if (!directed) w[v][u] = Math.min(w[v][u], weight);
+    }
+
+    public boolean hasEdge(int u, int v) {
+        return w[u][v] < INF;
+    }
+}
+```
 
 ---
 
@@ -1381,4 +1908,44 @@ public class Graph<T> {
 
 ---
 
-*Continue with remaining implementations...*
+### G.3 Weighted Graph
+
+```java
+import java.util.*;
+
+public class WeightedGraph {
+    public record Edge(int to, int w) {}
+
+    public static List<Edge>[] buildUndirected(int n, int[][] edges) {
+        @SuppressWarnings("unchecked")
+        var g = (List<Edge>[]) new List[n];
+        for (var i = 0; i < n; i++) g[i] = new ArrayList<>();
+        for (var e : edges) {
+            var u = e[0];
+            var v = e[1];
+            var w = e[2];
+            g[u].add(new Edge(v, w));
+            g[v].add(new Edge(u, w));
+        }
+        return g;
+    }
+}
+```
+
+---
+
+### G.4 Directed Graph
+
+```java
+import java.util.*;
+
+public class DirectedGraph {
+    public static List<Integer>[] build(int n, int[][] edges) {
+        @SuppressWarnings("unchecked")
+        var g = (List<Integer>[]) new List[n];
+        for (var i = 0; i < n; i++) g[i] = new ArrayList<>();
+        for (var e : edges) g[e[0]].add(e[1]);
+        return g;
+    }
+}
+```

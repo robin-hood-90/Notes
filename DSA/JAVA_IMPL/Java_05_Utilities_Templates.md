@@ -17,6 +17,9 @@ Helper classes, common patterns, comparator utilities, and testing templates for
 - [2-SAT Template](#2-sat-template)
 - [Min-Cost Max-Flow Template](#min-cost-max-flow-template)
 - [Suffix Automaton Template](#suffix-automaton-template)
+- [Interval Utilities](#interval-utilities)
+- [Li Chao Tree Template](#li-chao-tree-template)
+- [DP Optimization Templates](#dp-optimization-templates)
 
 ---
 
@@ -1039,5 +1042,185 @@ static final class SAM {
     void extend(char ch){ int cur=st.size(); st.add(new State()); st.get(cur).len=st.get(last).len+1; int p=last; while(p!=-1 && !st.get(p).next.containsKey(ch)){ st.get(p).next.put(ch,cur); p=st.get(p).link; }
         if(p==-1) st.get(cur).link=0; else { int q=st.get(p).next.get(ch); if(st.get(p).len+1==st.get(q).len) st.get(cur).link=q; else { int clone=st.size(); State qc=new State(); qc.len=st.get(p).len+1; qc.link=st.get(q).link; qc.next.putAll(st.get(q).next); st.add(qc); while(p!=-1 && st.get(p).next.get(ch)==q){ st.get(p).next.put(ch,clone); p=st.get(p).link; } st.get(q).link=st.get(cur).link=clone; } }
         last=cur; }
+}
+```
+
+---
+
+## Interval Utilities
+
+```java
+import java.util.*;
+
+public class IntervalUtils {
+    public record Interval(int l, int r) {}
+
+    // Merge overlapping intervals. Assumes closed intervals [l,r].
+    public static List<Interval> merge(List<Interval> in) {
+        if (in.isEmpty()) return List.of();
+        var a = new ArrayList<>(in);
+        a.sort(Comparator.comparingInt(Interval::l).thenComparingInt(Interval::r));
+        var res = new ArrayList<Interval>();
+        var curL = a.get(0).l;
+        var curR = a.get(0).r;
+        for (var i = 1; i < a.size(); i++) {
+            var it = a.get(i);
+            if (it.l <= curR) {
+                curR = Math.max(curR, it.r);
+            } else {
+                res.add(new Interval(curL, curR));
+                curL = it.l;
+                curR = it.r;
+            }
+        }
+        res.add(new Interval(curL, curR));
+        return res;
+    }
+
+    // Insert interval into sorted non-overlapping list in O(n).
+    public static List<Interval> insert(List<Interval> sortedNoOverlap, Interval x) {
+        var res = new ArrayList<Interval>();
+        var i = 0;
+        while (i < sortedNoOverlap.size() && sortedNoOverlap.get(i).r < x.l) res.add(sortedNoOverlap.get(i++));
+        var l = x.l;
+        var r = x.r;
+        while (i < sortedNoOverlap.size() && sortedNoOverlap.get(i).l <= r) {
+            l = Math.min(l, sortedNoOverlap.get(i).l);
+            r = Math.max(r, sortedNoOverlap.get(i).r);
+            i++;
+        }
+        res.add(new Interval(l, r));
+        while (i < sortedNoOverlap.size()) res.add(sortedNoOverlap.get(i++));
+        return res;
+    }
+}
+```
+
+---
+
+## Li Chao Tree Template
+
+```java
+public class LiChaoTree {
+    // Maintains min of lines y = m*x + b over integer x in [X_L, X_R].
+
+    public static final class Line {
+        long m, b;
+        Line(long m, long b) { this.m = m; this.b = b; }
+        long get(long x) { return m * x + b; }
+    }
+
+    static final class Node {
+        Line line;
+        Node l, r;
+        Node(Line line) { this.line = line; }
+    }
+
+    final long X_L, X_R;
+    Node root;
+
+    public LiChaoTree(long xL, long xR) {
+        this.X_L = xL;
+        this.X_R = xR;
+    }
+
+    public void addLine(long m, long b) {
+        var ln = new Line(m, b);
+        root = add(root, X_L, X_R, ln);
+    }
+
+    public long query(long x) {
+        return query(root, X_L, X_R, x);
+    }
+
+    private static Node add(Node n, long l, long r, Line ln) {
+        if (n == null) return new Node(ln);
+        var mid = (l + r) >> 1;
+        var left = ln.get(l) < n.line.get(l);
+        var m = ln.get(mid) < n.line.get(mid);
+        if (m) {
+            var tmp = n.line;
+            n.line = ln;
+            ln = tmp;
+        }
+        if (l == r) return n;
+        if (left != m) n.l = add(n.l, l, mid, ln);
+        else n.r = add(n.r, mid + 1, r, ln);
+        return n;
+    }
+
+    private static long query(Node n, long l, long r, long x) {
+        if (n == null) return Long.MAX_VALUE;
+        var res = n.line.get(x);
+        if (l == r) return res;
+        var mid = (l + r) >> 1;
+        if (x <= mid) return Math.min(res, query(n.l, l, mid, x));
+        return Math.min(res, query(n.r, mid + 1, r, x));
+    }
+}
+```
+
+---
+
+## DP Optimization Templates
+
+```java
+import java.util.*;
+
+public class DpOptimizations {
+
+    /**
+     * Divide-and-Conquer DP optimization skeleton.
+     * dp[i][j] = min_{k<=j} (dp[i-1][k] + cost(k+1, j)) with monotone opt.
+     */
+    public static void divideAndConquer(int i, int l, int r, int optL, int optR,
+                                        long[] prev, long[] cur, java.util.function.BiFunction<Integer, Integer, Long> cost) {
+        if (l > r) return;
+        var mid = (l + r) >>> 1;
+        long bestVal = Long.MAX_VALUE;
+        int bestK = -1;
+        var start = Math.max(optL, 0);
+        var end = Math.min(optR, mid);
+        for (var k = start; k <= end; k++) {
+            var v = prev[k] + cost.apply(k + 1, mid);
+            if (v < bestVal) {
+                bestVal = v;
+                bestK = k;
+            }
+        }
+        cur[mid] = bestVal;
+        divideAndConquer(i, l, mid - 1, optL, bestK, prev, cur, cost);
+        divideAndConquer(i, mid + 1, r, bestK, optR, prev, cur, cost);
+    }
+
+    /**
+     * Knuth optimization skeleton.
+     * dp[i][j] = min_{k in [opt[i][j-1], opt[i+1][j]]} (dp[i][k] + dp[k][j]) + w(i,j)
+     */
+    public static long[][] knuth(long[][] w) {
+        var n = w.length;
+        var dp = new long[n][n];
+        var opt = new int[n][n];
+        for (var i = 0; i < n; i++) {
+            dp[i][i] = 0;
+            opt[i][i] = i;
+        }
+        for (var len = 2; len < n; len++) {
+            for (var i = 0; i + len < n; i++) {
+                var j = i + len;
+                dp[i][j] = Long.MAX_VALUE;
+                var start = opt[i][j - 1];
+                var end = opt[i + 1][j];
+                for (var k = start; k <= end; k++) {
+                    var v = dp[i][k] + dp[k][j] + w[i][j];
+                    if (v < dp[i][j]) {
+                        dp[i][j] = v;
+                        opt[i][j] = k;
+                    }
+                }
+            }
+        }
+        return dp;
+    }
 }
 ```

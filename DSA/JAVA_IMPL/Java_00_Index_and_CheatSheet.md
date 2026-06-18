@@ -31,6 +31,7 @@ Complete Java 17+ implementations of all data structures and algorithms from [[D
 | [[Java_03_Algorithms_Part1]] | Sorting, Searching, Greedy, Backtracking | 53 |
 | [[Java_04_Algorithms_Part2]] | DP, Graph Algos, Strings, Math | 64 |
 | [[Java_05_Utilities_Templates]] | Helpers, Patterns, Common Utils | ~15 |
+| [[Java_06_Advanced_Algorithms_CP]] | Flow, FFT/NTT, Geometry, Mo's, NP/Approx | CP |
 
 ---
 

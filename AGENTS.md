@@ -67,6 +67,49 @@ CICD is a parent directory with tool-specific sibling directories: `AWS`, `Docke
   - Spot-read for broken code fences, unbalanced callouts
   - Confirm new files are linked from the subject MOC
 
+## Code Fence Discipline
+
+Code fences are the most common source of rendering bugs. Follow these rules strictly:
+
+### Mermaid Blocks
+
+- Every ` ```mermaid ` block **must** have a closing ` ``` ` on the very next line after the last mermaid content (before any markdown resumes).
+- The markdown that follows a mermaid diagram (headings, tables, lists, paragraphs) must sit **outside** both the mermaid opener and closer.
+- **Correct pattern:**
+  ````text
+  ```mermaid
+  flowchart LR
+      ...
+  end
+  ```
+
+  ### Next Section
+
+  [markdown content continues...]
+  ````
+- **Wrong pattern (missing closer):**
+  ````text
+  ```mermaid
+  flowchart LR
+      ...
+  end
+
+  ### Next Section    ← markdown swallowed into mermaid block
+  [markdown content...]
+  ````
+
+### Code Blocks
+
+- Every ` ``` ` opening a code block **must** have a matching closing ` ``` `.
+- **Never** write two consecutive ` ``` ` fences — they create an empty semantic code block.
+- After closing a mermaid block, the next ` ``` ` must explicitly open its own code block.
+
+### Verification
+
+- Count fence lines per file: `grep -c '```' file.md` — must be **even**. An odd count means an unclosed fence.
+- Check for double fences: `rg -n '```\n```' --multiline file.md`
+- After adding or editing any ` ``` ` fence, run both checks.
+
 ## Tooling
 
 Generator scripts (`gen_js.py`, `generate_sql_guides.py`, `JavaScript/*generate*`, `React/*generate*`) are all stubs. **Do not use them.** Prefer direct Markdown edits.

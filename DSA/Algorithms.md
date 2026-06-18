@@ -101,6 +101,13 @@ flowchart LR
 
 ## 1. Time and Space Complexity Analysis
 
+```mermaid
+flowchart LR
+    subgraph Growth["Common Growth Rates"]
+        A["O(1)"] --> B["O(log n)"] --> C["O(n)"] --> D["O(n log n)"] --> E["O(n^2)"] --> F["O(2^n)"]
+    end
+```
+
 ### Big-O Notation
 
 > [!summary] Recall
@@ -813,6 +820,10 @@ Backtrack(A, remain, start, path, result):
 
 ## 19. Branch and Bound
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#Y.1 0/1 Knapsack (Branch and Bound)]]
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#Y.2 TSP (Branch and Bound)]]
+
 ```mermaid
 flowchart TD
     subgraph TSP["TSP Branch and Bound (4 cities)"]
@@ -1307,6 +1318,16 @@ MaxCrossingSum(A, lo, mid, hi):
 ---
 
 ## 6. Greedy Algorithms
+
+```mermaid
+flowchart TD
+  P[Problem] --> C{Greedy choice?
+  "pick best local"}
+  C -->|Yes| E[Prove correctness]
+  E --> EA[Exchange argument]
+  E --> SH[Greedy stays ahead]
+  C -->|No/Unsure| D[Try DP / Graph / Backtracking]
+```
 
 ### Overview
 
@@ -1863,9 +1884,15 @@ DigitDP(L, R):
 - Applies to interval DP `dp[i][j] = min_{k in (i..j)}(dp[i][k] + dp[k][j]) + w(i,j)` when quadrangle inequality and monotone opt hold
 - Restricts k to `[opt[i][j-1], opt[i+1][j]]` → O(n^2)
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#DP Optimization Templates]]
+
 #### CHT DP / Li Chao tree
 - Lines of form `y = m*x + b` with queries in monotone x (convex hull trick), or arbitrary x (Li Chao)
 - Transforms O(n^2) transition into O(n log n)
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#Li Chao Tree Template]]
 
 > [!warning] Only apply after proving conditions
 > - D&C and Knuth need monotonicity/convexity conditions. Guessing leads to wrong answers.
@@ -2097,8 +2124,8 @@ flowchart LR
     end
 
 ```
-```
 
+```
 Prim(source):
     visited[1 .. V] = false
     pq = MinHeap([(0, source)])         # (weight, vertex)
@@ -2656,6 +2683,10 @@ Typical queries:
 | **Fermat's Little Theorem** | a^(p-1) ≡ 1 (mod p) | Used for modular inverse |
 
 ### Convolution: FFT vs NTT
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#T.1 FFT Convolution (Complex)]]
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#T.2 NTT Convolution (Mod Prime)]]
 
 #### When you need convolution
 - Multiply polynomials, correlate sequences, string matching via convolution, subset DP accelerations
@@ -3266,6 +3297,23 @@ FindMedianSorted(A[1 .. n], B[1 .. m]):
 
 ## 14. Interval Algorithms
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#Interval Utilities]]
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#Two Pointers Template]]
+> - ![[JAVA_IMPL/Java_05_Utilities_Templates#Sliding Window Template]]
+
+```mermaid
+flowchart LR
+  I[Intervals] --> S[Sort]
+  S -->|by start| M[Merge intervals]
+  S -->|by end| G[Greedy scheduling]
+  S -->|events| SW[Sweep line]
+  SW --> E1[+1 on start]
+  SW --> E2[-1 on end]
+  E1 --> C[Track active count/max overlap]
+  E2 --> C
+```
+
 ### Common Operations
 
 | Operation | Approach | Complexity |
@@ -3348,6 +3396,9 @@ InsertInterval(intervals[1 .. n], newInterval):   // intervals sorted, no overla
 - Maintain active set (multiset, PQ, segtree) to answer “max overlap”, union length, skyline
 
 #### Mo’s Algorithm (range add/remove)
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#V.1 Mo's Algorithm]]
 - Reorder queries in blocks of size B ≈ n/√q, move L/R pointers to match next query
 - Maintain a mutable structure with `add(x)`, `remove(x)` in O(1)/O(log n)
 - Complexity: O((n + q) * sqrt(n)) typically; constants matter
@@ -3365,6 +3416,9 @@ InsertInterval(intervals[1 .. n], newInterval):   // intervals sorted, no overla
 ---
 
 ## 15. Randomized Algorithms
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#W.1 Randomized Treap]]
 
 > [!summary] Intuition
 > Randomized algorithms use a **coin flip** somewhere in their logic. Instead of always picking the best or middle element, they roll the dice. This randomness breaks pathological worst-case inputs — even if an adversary knows your algorithm, they can't craft a worst-case input because the algorithm's behavior changes each run. Think of Random QuickSort: by picking a random pivot, no particular input can force O(n²) every time; the expected time is always O(n log n).
@@ -3486,6 +3540,9 @@ RandomizedQuickSelect(A[1 .. n], k):
 ---
 
 ## 16. Computational Geometry
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#U.1 Geometry Primitives + Convex Hull]]
 
 > [!summary] Intuition
 > Computational geometry is about answering spatial questions efficiently: "Do these lines intersect?" "What's the smallest polygon containing these points?" "Is this point inside that shape?" The key insight is that **cross product** encodes direction (left turn vs right turn), and **sorting by angle** transforms an unordered set of points into an ordered path that reveals convex structure.
@@ -3647,6 +3704,21 @@ PointInPolygon(polygon[1 .. n], point):
 
 ## 17. Network Flow
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#S.1 Dinic's Max Flow]]
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#S.2 Min-Cost Max-Flow]]
+
+```mermaid
+flowchart TD
+  S((s)) -->|cap| A((u))
+  S -->|cap| B((v))
+  A -->|cap| T((t))
+  B -->|cap| T
+  A -.residual.-> S
+  T -.residual.-> A
+  T -.residual.-> B
+```
+
 ### Algorithms
 
 | Algorithm | Complexity | Notes |
@@ -3793,6 +3865,21 @@ When to use vs Dinic:
 ---
 
 ## 18. NP-Completeness and Approximation
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#X.1 Bitmask TSP (Exact)]]
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#X.2 Vertex Cover 2-Approx]]
+> - ![[JAVA_IMPL/Java_06_Advanced_Algorithms_CP#X.3 Set Cover Greedy (ln n Approx)]]
+
+```mermaid
+flowchart LR
+  P[Problems] --> NP[NP]
+  NP --> NPC[NP-Complete]
+  NP --> NPH[NP-Hard]
+  NPC -->|poly-time reduction| NPC
+  NPC -->|if P=NP| Poly[All in P]
+  NPH --> Approx[Approximation]
+```
 
 ### Complexity Classes
 

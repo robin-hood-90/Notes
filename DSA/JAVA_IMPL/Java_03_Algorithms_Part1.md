@@ -18,24 +18,24 @@ Complete Java 17+ implementations of sorting, searching, greedy, divide-and-conq
 - [J.9 Radix Sort](#j-9-radix-sort)
 
 ### Section K: Searching Algorithms
-- [K.1 Linear Search](#k-1-linear-search)
-- [K.2 Binary Search](#k-2-binary-search)
-- [K.3 Binary Search Variants](#k-3-binary-search-variants)
+- [K.1 Linear Search](#k1-linear-search)
+- [K.2 Binary Search](#k2-binary-search)
+- [K.3 Binary Search Variants](#k3-binary-search-variants)
 
 ### Section L: Divide and Conquer
-- [L.1 Closest Pair of Points](#l-1-closest-pair-of-points)
-- [L.2 Kadane's Algorithm](#l-2-kadanes-algorithm)
-- [L.3 Count Inversions](#l-3-count-inversions)
+- [L.1 Closest Pair of Points](#l1-closest-pair-of-points)
+- [L.2 Kadane's Algorithm](#l2-kadanes-algorithm)
+- [L.3 Count Inversions](#l3-count-inversions)
 
 ### Section M: Greedy Algorithms
-- [M.1 Activity Selection](#m-1-activity-selection)
-- [M.2 Fractional Knapsack](#m-2-fractional-knapsack)
-- [M.3 Huffman Coding](#m-3-huffman-coding)
+- [M.1 Activity Selection](#m1-activity-selection)
+- [M.2 Fractional Knapsack](#m2-fractional-knapsack)
+- [M.3 Huffman Coding](#m3-huffman-coding)
 
 ### Section N: Backtracking
-- [N.1 N-Queens](#n-1-n-queens)
-- [N.2 Sudoku Solver](#n-2-sudoku-solver)
-- [N.3 Generate Subsets](#n-3-generate-subsets)
+- [N.1 N-Queens](#n1-n-queens)
+- [N.2 Sudoku Solver](#n2-sudoku-solver)
+- [N.3 Generate Subsets](#n3-generate-subsets)
 
 ---
 
@@ -741,6 +741,23 @@ public class RadixSort {
 
 ---
 
+### K.1 Linear Search
+
+**Concept:** Scan linearly until you find the target.
+
+```java
+public class LinearSearch {
+    public static int indexOf(int[] a, int x) {
+        for (var i = 0; i < a.length; i++) {
+            if (a[i] == x) return i;
+        }
+        return -1;
+    }
+}
+```
+
+---
+
 ### K.2 Binary Search
 
 **Concept:** Divide search interval in half repeatedly.
@@ -906,6 +923,48 @@ public class BinarySearch {
 }
 ```
 
+---
+
+### K.3 Binary Search Variants
+
+```java
+public class BinarySearchVariants {
+
+    // First index i where a[i] >= x (array must be sorted)
+    public static int lowerBound(int[] a, int x) {
+        int l = 0, r = a.length;
+        while (l < r) {
+            var m = (l + r) >>> 1;
+            if (a[m] >= x) r = m;
+            else l = m + 1;
+        }
+        return l;
+    }
+
+    // First index i where a[i] > x
+    public static int upperBound(int[] a, int x) {
+        int l = 0, r = a.length;
+        while (l < r) {
+            var m = (l + r) >>> 1;
+            if (a[m] > x) r = m;
+            else l = m + 1;
+        }
+        return l;
+    }
+
+    // Minimum x in [lo, hi] such that predicate(x) is true (monotone).
+    public static long firstTrue(long lo, long hi, java.util.function.LongPredicate predicate) {
+        long l = lo, r = hi;
+        while (l < r) {
+            var m = l + ((r - l) >>> 1);
+            if (predicate.test(m)) r = m;
+            else l = m + 1;
+        }
+        return l;
+    }
+}
+```
+
 **Key Points:**
 - Template for many "search in sorted" problems
 - `left + (right - left) / 2` prevents overflow
@@ -915,6 +974,89 @@ public class BinarySearch {
 ---
 
 ## Section L: Divide and Conquer
+
+---
+
+### L.1 Closest Pair of Points
+
+**Concept:** Divide and conquer to find closest pair in O(n log n).
+
+```java
+import java.util.*;
+
+public class ClosestPairOfPoints {
+
+    public record Pt(long x, long y) {}
+
+    public static double closestDistance(Pt[] pts) {
+        var n = pts.length;
+        if (n < 2) return Double.POSITIVE_INFINITY;
+
+        var px = pts.clone();
+        Arrays.sort(px, Comparator.comparingLong(Pt::x).thenComparingLong(Pt::y));
+        var tmp = new Pt[n];
+        return Math.sqrt(solve(px, 0, n, tmp));
+    }
+
+    // returns min squared distance in px[l..r)
+    private static long solve(Pt[] px, int l, int r, Pt[] tmp) {
+        var n = r - l;
+        if (n <= 3) {
+            var best = Long.MAX_VALUE;
+            for (var i = l; i < r; i++) {
+                for (var j = i + 1; j < r; j++) {
+                    best = Math.min(best, dist2(px[i], px[j]));
+                }
+            }
+            Arrays.sort(px, l, r, Comparator.comparingLong(Pt::y));
+            return best;
+        }
+
+        var m = (l + r) >>> 1;
+        var midX = px[m].x();
+        var leftBest = solve(px, l, m, tmp);
+        var rightBest = solve(px, m, r, tmp);
+        var best = Math.min(leftBest, rightBest);
+
+        // merge by y
+        mergeByY(px, l, m, r, tmp);
+
+        // build strip
+        var k = 0;
+        for (var i = l; i < r; i++) {
+            var dx = px[i].x() - midX;
+            if (dx * dx < best) tmp[k++] = px[i];
+        }
+
+        // check next up to 7 points
+        for (var i = 0; i < k; i++) {
+            for (var j = i + 1; j < k; j++) {
+                var dy = tmp[j].y() - tmp[i].y();
+                if (dy * dy >= best) break;
+                best = Math.min(best, dist2(tmp[i], tmp[j]));
+            }
+        }
+        return best;
+    }
+
+    private static void mergeByY(Pt[] a, int l, int m, int r, Pt[] tmp) {
+        int i = l, j = m, k = 0;
+        while (i < m && j < r) {
+            if (a[i].y() <= a[j].y()) tmp[k++] = a[i++];
+            else tmp[k++] = a[j++];
+        }
+        while (i < m) tmp[k++] = a[i++];
+        while (j < r) tmp[k++] = a[j++];
+        System.arraycopy(tmp, 0, a, l, k);
+    }
+
+    private static long dist2(Pt a, Pt b) {
+        var dx = a.x() - b.x();
+        var dy = a.y() - b.y();
+        return dx * dx + dy * dy;
+    }
+}
+```
 
 ---
 
@@ -1013,7 +1155,40 @@ public class KadaneAlgorithm {
 
 ---
 
-*Continue with other sections...*
+### L.3 Count Inversions
+
+**Concept:** Merge-sort counting. Each time an element from right half is placed before left half, it contributes inversions.
+
+```java
+import java.util.*;
+
+public class CountInversions {
+    public static long count(int[] a) {
+        var tmp = new int[a.length];
+        return sortCount(a, 0, a.length, tmp);
+    }
+
+    private static long sortCount(int[] a, int l, int r, int[] tmp) {
+        if (r - l <= 1) return 0;
+        var m = (l + r) >>> 1;
+        var inv = sortCount(a, l, m, tmp) + sortCount(a, m, r, tmp);
+
+        int i = l, j = m, k = 0;
+        while (i < m && j < r) {
+            if (a[i] <= a[j]) tmp[k++] = a[i++];
+            else {
+                tmp[k++] = a[j++];
+                inv += (m - i);
+            }
+        }
+        while (i < m) tmp[k++] = a[i++];
+        while (j < r) tmp[k++] = a[j++];
+        System.arraycopy(tmp, 0, a, l, k);
+        return inv;
+    }
+}
+```
+
 
 ## Section M: Greedy Algorithms
 
@@ -1100,6 +1275,74 @@ public class FractionalKnapsack {
         }
         
         return totalValue;
+    }
+}
+```
+
+---
+
+### M.3 Huffman Coding
+
+**Concept:** Optimal prefix code: repeatedly merge two least frequent nodes.
+
+```java
+import java.util.*;
+
+public class HuffmanCoding {
+
+    static final class Node implements Comparable<Node> {
+        final int freq;
+        final char ch; // '\0' for internal nodes
+        final Node left, right;
+
+        Node(int freq, char ch, Node left, Node right) {
+            this.freq = freq;
+            this.ch = ch;
+            this.left = left;
+            this.right = right;
+        }
+
+        boolean isLeaf() {
+            return left == null && right == null;
+        }
+
+        @Override
+        public int compareTo(Node o) {
+            return Integer.compare(this.freq, o.freq);
+        }
+    }
+
+    public static Node buildTree(Map<Character, Integer> freq) {
+        var pq = new PriorityQueue<Node>();
+        for (var e : freq.entrySet()) pq.add(new Node(e.getValue(), e.getKey(), null, null));
+        if (pq.isEmpty()) return null;
+        while (pq.size() > 1) {
+            var a = pq.poll();
+            var b = pq.poll();
+            pq.add(new Node(a.freq + b.freq, '\0', a, b));
+        }
+        return pq.poll();
+    }
+
+    public static Map<Character, String> codes(Node root) {
+        var out = new HashMap<Character, String>();
+        if (root == null) return out;
+        dfs(root, new StringBuilder(), out);
+        return out;
+    }
+
+    private static void dfs(Node u, StringBuilder path, Map<Character, String> out) {
+        if (u.isLeaf()) {
+            out.put(u.ch, path.length() == 0 ? "0" : path.toString());
+            return;
+        }
+        var len = path.length();
+        path.append('0');
+        dfs(u.left, path, out);
+        path.setLength(len);
+        path.append('1');
+        dfs(u.right, path, out);
+        path.setLength(len);
     }
 }
 ```
@@ -1234,4 +1477,126 @@ public class NQueens {
 
 ---
 
-*Continue with more algorithms...*
+### N.2 Sudoku Solver
+
+```java
+public class SudokuSolver {
+
+    // board: 9x9, empty cells are '.'
+    public static boolean solve(char[][] board) {
+        var rowMask = new int[9];
+        var colMask = new int[9];
+        var boxMask = new int[9];
+
+        for (var r = 0; r < 9; r++) {
+            for (var c = 0; c < 9; c++) {
+                var ch = board[r][c];
+                if (ch == '.') continue;
+                var d = ch - '1';
+                var bit = 1 << d;
+                var b = (r / 3) * 3 + (c / 3);
+                if (((rowMask[r] | colMask[c] | boxMask[b]) & bit) != 0) return false;
+                rowMask[r] |= bit;
+                colMask[c] |= bit;
+                boxMask[b] |= bit;
+            }
+        }
+
+        return dfs(board, rowMask, colMask, boxMask);
+    }
+
+    private static boolean dfs(char[][] board, int[] rowMask, int[] colMask, int[] boxMask) {
+        int bestR = -1, bestC = -1, bestChoices = 10, bestAvail = 0;
+
+        for (var r = 0; r < 9; r++) {
+            for (var c = 0; c < 9; c++) {
+                if (board[r][c] != '.') continue;
+                var b = (r / 3) * 3 + (c / 3);
+                var used = rowMask[r] | colMask[c] | boxMask[b];
+                var avail = (~used) & ((1 << 9) - 1);
+                var choices = Integer.bitCount(avail);
+                if (choices == 0) return false;
+                if (choices < bestChoices) {
+                    bestChoices = choices;
+                    bestR = r;
+                    bestC = c;
+                    bestAvail = avail;
+                    if (choices == 1) break;
+                }
+            }
+            if (bestChoices == 1) break;
+        }
+
+        if (bestR == -1) return true;
+
+        var r = bestR;
+        var c = bestC;
+        var b = (r / 3) * 3 + (c / 3);
+        var avail = bestAvail;
+
+        while (avail != 0) {
+            var bit = avail & -avail;
+            var d = Integer.numberOfTrailingZeros(bit);
+            avail -= bit;
+
+            board[r][c] = (char) ('1' + d);
+            rowMask[r] |= bit;
+            colMask[c] |= bit;
+            boxMask[b] |= bit;
+
+            if (dfs(board, rowMask, colMask, boxMask)) return true;
+
+            rowMask[r] ^= bit;
+            colMask[c] ^= bit;
+            boxMask[b] ^= bit;
+            board[r][c] = '.';
+        }
+        return false;
+    }
+}
+```
+
+---
+
+### N.3 Generate Subsets
+
+```java
+import java.util.*;
+
+public class GenerateSubsets {
+
+    // Backtracking
+    public static List<List<Integer>> subsets(int[] a) {
+        var res = new ArrayList<List<Integer>>();
+        var cur = new ArrayList<Integer>();
+        dfs(0, a, cur, res);
+        return res;
+    }
+
+    private static void dfs(int i, int[] a, List<Integer> cur, List<List<Integer>> res) {
+        if (i == a.length) {
+            res.add(new ArrayList<>(cur));
+            return;
+        }
+        dfs(i + 1, a, cur, res);
+        cur.add(a[i]);
+        dfs(i + 1, a, cur, res);
+        cur.remove(cur.size() - 1);
+    }
+
+    // Bitmask (CP-friendly)
+    public static List<int[]> subsetsAsArrays(int[] a) {
+        var n = a.length;
+        var out = new ArrayList<int[]>();
+        for (var mask = 0; mask < (1 << n); mask++) {
+            var k = Integer.bitCount(mask);
+            var b = new int[k];
+            for (int i = 0, j = 0; i < n; i++) {
+                if (((mask >> i) & 1) == 1) b[j++] = a[i];
+            }
+            out.add(b);
+        }
+        return out;
+    }
+}
+```

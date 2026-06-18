@@ -2,7 +2,7 @@
 tags: [cpp, foundations, templates, variadic-templates, fold-expressions, specialization, type-deduction]
 aliases: ["Templates", "Function Templates", "Class Templates", "Variadic Templates", "Fold Expressions", "Template Specialization"]
 status: stable
-updated: 2026-05-09
+updated: 2026-05-31
 ---
 
 # Templates: From Basics to Variadic
@@ -12,14 +12,71 @@ updated: 2026-05-09
 
 ## Table of Contents
 
-1. [Function Templates](#function-templates)
-2. [Class Templates](#class-templates)
-3. [Template Parameters and Deduction](#template-parameters-and-deduction)
+1. [Why Templates?](#why-templates)
+2. [Function Templates](#function-templates)
+3. [Class Templates](#class-templates)
 4. [Template Specialization](#template-specialization)
 5. [Variadic Templates (C++11)](#variadic-templates)
 6. [Fold Expressions (C++17)](#fold-expressions)
-7. [Template Compilation Model](#template-compilation-model)
-8. [Pitfalls](#pitfalls)
+7. [Real-World Template Patterns](#real-world-template-patterns)
+8. [Template Compilation Model](#template-compilation-model)
+9. [Template Design Decisions](#template-design-decisions)
+10. [Pitfalls](#pitfalls)
+
+---
+
+## Why Templates?
+
+> [!info] Zero-cost generic code
+> Templates let you write generic algorithms once and have the compiler generate highly optimized, type-safe code for many concrete types at compile time.
+
+### The problem without templates
+
+Without templates, you typically choose between:
+
+1. Manually duplicating code for each type (`max_int`, `max_double`, ...)
+2. Using inheritance/virtual functions for runtime polymorphism
+3. Using type-erased wrappers like `std::function` or `void*`
+
+Each has trade-offs in boilerplate, performance, and type safety.
+
+```mermaid
+flowchart TD
+    A[Need generic behavior] --> B{Types known at compile time?}
+    B -->|Yes| C[Use templates]
+    B -->|No| D{Performance critical?}
+    D -->|Yes| E[Use virtual interfaces]
+    D -->|No| F[Use type erasure<br/>(std::function, std::any)]
+```
+
+### When to use templates vs alternatives
+
+Use templates when all of these are true:
+
+- The algorithm is the same for many types
+- The types are known at compile time
+- You care about performance and type safety
+
+```text
+You can often start with overloads for 2-3 types.
+When the pattern keeps repeating, promote to a template.
+```
+
+| Approach          | When to use                                                   | Runtime cost        | Type safety     |
+|-------------------|---------------------------------------------------------------|---------------------|-----------------|
+| Overloaded funcs  | Few concrete types, simple API                               | Zero                | Compile-time    |
+| **Templates**     | Many types, same algorithm, compile-time types               | Zero (inlined)      | Compile-time    |
+| Virtual functions | Need runtime polymorphism / plugin-style extensibility       | Vtable indirection  | Compile-time    |
+| Type erasure      | Types vary at runtime, simpler API outweighs perf concerns   | Indirection + alloc | Runtime-checked |
+
+```mermaid
+flowchart LR
+    S[Generic requirement] --> O[Overload 2-3 functions]
+    O --> R{Still growing?}
+    R -->|No| K[Keep overloads]
+    R -->|Yes| T[Refactor to templates]
+    T --> P[Optionally add concepts/constraints]
+```
 
 ---
 
@@ -27,6 +84,32 @@ updated: 2026-05-09
 
 > [!info] Function template
 > A function template is a pattern that generates functions at compile time. The compiler instantiates a separate function for each unique set of template arguments. Templates enable generic code that works with any type that supports the operations used inside the template.
+
+### The basic pattern and when to use it
+
+```cpp
+template<typename T>
+T max_value(const T& a, const T& b) {
+    return (a < b) ? b : a;
+}
+
+int main() {
+    int i = max_value(3, 7);                    // T = int
+    double d = max_value(3.14, 2.71);           // T = double
+    std::string s = max_value("apple", "zebra");  // T = const char* → compares pointers (!)
+}
+```
+
+```cpp
+// Better string version: force std::string to avoid pointer comparison
+std::string s2 = max_value(std::string{"apple"}, std::string{"zebra"});
+```
+
+Use a function template when:
+
+- The implementation is identical for all participating types
+- The required operations form a simple constraint (e.g., "supports `<` and copy")
+- You want the compiler to inline and optimize each specialization
 
 ### What the compiler does — 4-step instantiation
 
@@ -122,31 +205,11 @@ void process(Container& c) {
 **The rule**: if a name depends on a template parameter and is a type, prefix it with `typename`. If it's a template member function, prefix it with `.template` or `->template`. This tells the compiler to wait until instantiation to resolve it.
 
 ```cpp
-// Basic function template
+// Safer, C++20-constrained template
 template<typename T>
-T max(T a, T b) {
-    return (a > b) ? a : b;
-}
-
-int main() {
-    int i = max(3, 7);                  // T = int
-    double d = max(3.14, 2.71);         // T = double
-    std::string s = max<std::string>("apple", "zebra");  // T = std::string
-}
-```
-
-### Multiple template parameters
-
-```cpp
-template<typename T, typename U>
-auto multiply(T a, U b) -> decltype(a * b) {   // Trailing return type (C++11)
-    return a * b;
-}
-
-// C++14: auto return type deduction works without trailing return type
-template<typename T, typename U>
-auto multiply(T a, U b) {
-    return a * b;                       // Deduced from return expression
+requires std::totally_ordered<T>
+T max_value(const T& a, const T& b) {
+    return (a < b) ? b : a;
 }
 ```
 
@@ -188,16 +251,16 @@ public:
     size_t size() const { return data.size(); }
 };
 
-// Non-type template parameters
-template<typename T, size_t Capacity>
+// Non-type template parameters: size known at compile time
+template<typename T, std::size_t Capacity>
 class StaticVector {
     T data[Capacity];
-    size_t count = 0;
+    std::size_t count = 0;
 public:
     void push_back(const T& value) {
         if (count < Capacity) data[count++] = value;
     }
-    size_t size() const { return count; }
+    std::size_t size() const { return count; }
 };
 
 StaticVector<int, 64> smallVec;    // Capacity = 64, no heap allocation
@@ -374,6 +437,69 @@ bool anyTrue(Args... args) {
 
 ---
 
+## Real-World Template Patterns
+
+> [!info] Patterns built on templates
+> Many advanced C++ techniques are thin layers on top of templates: traits, tag dispatch, CRTP, and SFINAE/constraints.
+
+### Type traits and type queries
+
+Use traits (from `<type_traits>`) to ask questions about types at compile time:
+
+```cpp
+template<typename T>
+void print_if_integral(const T& value) {
+    if constexpr (std::is_integral_v<T>) {
+        std::cout << "integral: " << value << '\n';
+    } else {
+        std::cout << "non-integral" << '\n';
+    }
+}
+```
+
+### Tag dispatch
+
+```cpp
+template<typename It>
+void advance_impl(It& it, int n, std::random_access_iterator_tag) {
+    it += n;   // O(1)
+}
+
+template<typename It>
+void advance_impl(It& it, int n, std::input_iterator_tag) {
+    while (n--) ++it;   // O(n)
+}
+
+template<typename It>
+void my_advance(It& it, int n) {
+    using Cat = typename std::iterator_traits<It>::iterator_category;
+    advance_impl(it, n, Cat{});
+}
+```
+
+### CRTP and static polymorphism
+
+```cpp
+template<typename Derived>
+class Comparable {
+public:
+    friend bool operator==(const Derived& a, const Derived& b) {
+        return a.value() == b.value();
+    }
+};
+
+class Id : public Comparable<Id> {
+    int id_{};
+public:
+    explicit Id(int id) : id_{id} {}
+    int value() const { return id_; }
+};
+```
+
+See [[C++/03_Advanced/01_Template_Metaprogramming_SFINAE_Type_Traits]] and [[C++/03_Advanced/04_CRTP_Mixins_and_Static_Polymorphism]] for deep dives.
+
+---
+
 ## Template Compilation Model
 
 > [!info] Why templates live in headers
@@ -412,6 +538,33 @@ template class MyClass<double>;
 // It was removed in C++11 because no compiler fully implemented it.
 // Use explicit instantiation instead.
 ```
+
+---
+
+## Template Design Decisions
+
+> [!info] Design levers
+> Template design is mostly about choosing what is a template parameter, where to put definitions, and how much compile-time complexity you accept.
+
+### Choosing parameter kinds
+
+| Question                                | Prefer this                        |
+|-----------------------------------------|------------------------------------|
+| Varies by type only?                    | `template<typename T>`             |
+| Varies by small integral or size?       | `template<std::size_t N>`         |
+| Needs a strategy/policy class?          | `template<typename Policy>`        |
+| Needs pluggable container/allocator?    | `template<template<class...> class C>` |
+
+### Binary size vs flexibility
+
+- Many distinct instantiations increase binary size
+- Fewer instantiations plus type erasure or base classes reduce size but add indirection
+- Use `extern template` and explicit instantiation for common hot types in libraries
+
+### Compile-time vs runtime trade-offs
+
+- Heavy metaprogramming can slow builds dramatically
+- Prefer `if constexpr`, concepts, and traits over deeply recursive templates
 
 ---
 

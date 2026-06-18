@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Python/01_Foundations/10_Testing_with_Pytest.md",
+                "file": "DSA/DataStructures.md",
                 "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "10_Testing_with_Pytest"
+              "title": "DataStructures"
             }
           }
         ]
@@ -185,6 +185,10 @@
   },
   "active": "1394f0a4d81fbf3c",
   "lastOpenFiles": [
+    "DSA/Algorithms.md",
+    "DSA/JAVA_IMPL/Java_06_Advanced_Algorithms_CP.md",
+    "C++/01_Foundations/06_Templates_Basics_to_Variadic.md",
+    "Python/01_Foundations/10_Testing_with_Pytest.md",
     "Python/01_Foundations/09_Stdlib_Essentials.md",
     "Python/01_Foundations/08_File_IO_Serialization.md",
     "Python/01_Foundations/05_Iterators_Generators_Decorators.md",
@@ -192,7 +196,6 @@
     "Python/03_Advanced/01_Async_Deep_Dive.md",
     "Python/05_Projects/01_REST_API_FastAPI_Postgres.md",
     "Python/01_Foundations/01_Python_Basics.md",
-    "DSA/Algorithms.md",
     "Python/05_Projects/03_CLI_Tool_Typer_Rich.md",
     "Python/05_Projects/02_Async_Web_Scraper.md",
     "Python/04_Playbooks/03_Production_Readiness.md",
@@ -208,9 +211,6 @@
     "Python/02_Core/11_Deep_Learning_PyTorch.md",
     "Python/02_Core/10_Machine_Learning.md",
     "Python/02_Core/09_Data_Visualization.md",
-    "Python/02_Core/08_Pandas_Deep_Dive.md",
-    "Python/02_Core/07_NumPy_Deep_Dive.md",
-    "Python/02_Core/06_Web_Frameworks_FastAPI.md",
     "Python/assets",
     "Python/05_Projects",
     "Python/04_Playbooks",

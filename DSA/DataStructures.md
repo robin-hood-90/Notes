@@ -2181,6 +2181,11 @@ IsBipartite(G):
 
 ### Overview
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#F.1 Trie (Prefix Tree)]]
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#F.2 Compressed Trie]]
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#F.3 Suffix Trie]]
+
 > [!tip] Intuition
 > When you type "app" in your phone's search bar and it suggests "apple," "application," and "appetizer," a trie is behind the scenes. Each node stores one character, and words are paths from root to a marked "end-of-word" node. Finding all words with a given prefix is O(prefix length) — you just walk down that path and collect all descendants. No hash table can match this prefix-search speed.
 
@@ -2488,6 +2493,8 @@ flowchart TD
         Q8["Result: 4 + 1 + 5 = 10 (sum of A[1]+A[2]+A[3])"]
     end
 
+```
+
 A segment tree is a binary tree used for storing intervals/segments. It allows querying and updating ranges in O(log n).
 
 ### Operations
@@ -2646,6 +2653,8 @@ flowchart LR
         UB1["idx=2 → BIT[2]+=5, idx=4 (2+2)"] --> UB2["idx=4 > N → stop"]
     end
 
+```
+
 A Fenwick Tree (BIT) is a data structure that efficiently supports prefix sum queries and point updates. Simpler and more cache-friendly than segment trees for these operations.
 
 ### Operations
@@ -2744,6 +2753,9 @@ GetValue(i):
 ## 14. Suffix Arrays and Suffix Trees
 
 ### Overview
+
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#F.4 Suffix Array]]
 
 > [!tip] Intuition
 > Every suffix of "banana" is one of "banana," "anana," "nana," ..., "a." A **Suffix Array** sorts these alphabetically and stores their starting indices: [5(a), 3(ana), 1(anana), 0(banana), 4(na), 2(nana)]. Once sorted, you can **binary search** for any substring in O(m log n). A **Suffix Tree** compresses all suffixes into a compact trie — same power, more memory.
@@ -2887,6 +2899,9 @@ FindPattern(S, sa[1 .. n], P[1 .. m]):
 
 ### Overview
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#H.3 Bloom Filter]]
+
 ```mermaid
 flowchart LR
     subgraph Bloom["Bloom Filter with 3 hash functions"]
@@ -2901,6 +2916,8 @@ flowchart LR
         C1["h1('dog')=1 → 1 ✓"] --> C2["h2('dog')=4 → 1 ✓"]
         C2 --> C3["h3('dog')=2 → 1 ✓ → maybe present (could be false positive)"]
     end
+
+```
 
 A space-efficient probabilistic data structure for set membership testing. May return false positives but never false negatives.
 
@@ -2968,6 +2985,9 @@ Query(element):
 
 ### Overview
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#H.4 Skip List]]
+
 ```mermaid
 flowchart TD
     subgraph Skip["Skip List levels"]
@@ -2980,6 +3000,8 @@ flowchart TD
         S2 --> S3["Move down to level 2 → move right to 30 → 25<30 → go down"]
         S3 --> S4["Move down to level 1 → move right to 25 ✓ found"]
     end
+
+```
 
 A skip list is a layered linked list that allows O(log n) search, insertion, and deletion on average. A probabilistic alternative to balanced BSTs.
 
@@ -3072,6 +3094,10 @@ RandomLevel():
 
 ## 17. LRU / LFU Caches
 
+> [!tip] Java implementation reference
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#I.1 LRU Cache]]
+> - ![[JAVA_IMPL/Java_02_Advanced_DS#I.2 LFU Cache]]
+
 ```mermaid
 flowchart TD
     subgraph LRU_State["LRU Cache (capacity=3)"]
@@ -3088,6 +3114,8 @@ flowchart TD
         P3 --> P4["Insert D at Head"]
         P4 --> P5["Map add D, List: Head ↔ D ↔ B ↔ A ↔ Tail"]
     end
+
+```
 
 ### Overview
 

@@ -2,7 +2,7 @@
 tags: [cpp, advanced, metaprogramming, sfinae, type-traits, enable-if, constexpr-if, void-t]
 aliases: ["Template Metaprogramming", "SFINAE", "Type Traits", "enable_if", "void_t", "constexpr if"]
 status: stable
-updated: 2026-05-09
+updated: 2026-05-31
 ---
 
 # Template Metaprogramming: SFINAE, Type Traits, and More
@@ -12,11 +12,47 @@ updated: 2026-05-09
 
 ## Table of Contents
 
-1. [SFINAE (Substitution Failure Is Not An Error)](#sfinae)
-2. [std::enable_if](#stdenableif)
-3. [Type Traits](#type-traits)
-4. [constexpr if (C++17)](#constexpr-if)
-5. [Pitfalls](#pitfalls)
+1. [Why Template Metaprogramming?](#why-template-metaprogramming)
+2. [SFINAE (Substitution Failure Is Not An Error)](#sfinae)
+3. [std::enable_if](#stdenableif)
+4. [Type Traits](#type-traits)
+5. [constexpr if (C++17)](#constexpr-if)
+6. [Advanced TMP: void_t, Type Lists, and Helpers](#advanced-tmp-void_t-type-lists-and-helpers)
+7. [Pitfalls](#pitfalls)
+
+---
+
+## Why Template Metaprogramming?
+
+> [!info] Compile-time logic
+> Template metaprogramming lets you move certain decisions from runtime to compile time: choosing overloads, selecting implementations, or rejecting types with clear diagnostics.
+
+### When do you actually need TMP?
+
+You generally reach for template metaprogramming when at least one of these is true:
+
+- You want an API that works for many types but behaves differently depending on type properties
+- You need to reject some types at compile time with a good error message
+- You want to avoid virtual dispatch / type erasure for performance but still need polymorphic behavior
+
+If all you need is a simple `if (std::is_integral_v<T>)` in a single function, `if constexpr` is often enough without deeper SFINAE.
+
+```mermaid
+flowchart TD
+    A[Need generic behavior] --> B{Same behavior for all types?}
+    B -->|Yes| C[Use plain templates]
+    B -->|No| D{Differences are simple?}
+    D -->|Yes| E[Use if constexpr<br/>with traits]
+    D -->|No| F[Use SFINAE / concepts<br/>or traits-based TMP]
+```
+
+### Trade-offs vs runtime polymorphism
+
+| Approach                 | When to use                                | Pros                                   | Cons                                  |
+|--------------------------|--------------------------------------------|----------------------------------------|---------------------------------------|
+| Virtual functions        | Runtime-selected behavior, plugin systems  | Simple mental model, stable ABI       | Indirection, no inlining across DSO   |
+| Type erasure (`std::function`) | Generic callbacks, non-templated API | Easy to use, hides template complexity | Allocation/indirection, runtime cost  |
+| **TMP (SFINAE/traits)** | Compile-time selection / rejection         | Zero-cost, highly optimized           | Complex, longer compile times         |
 
 ---
 
@@ -24,6 +60,19 @@ updated: 2026-05-09
 
 > [!info] SFINAE
 > When the compiler is resolving a function call, it tries all viable template specializations. If substituting template arguments into a function template's signature produces invalid code, that template is **removed from the overload set** (no error). This allows the compiler to pick another overload. SFINAE is the foundation of `enable_if`, type traits, and most compile-time introspection.
+
+### When to use SFINAE directly
+
+Prefer SFINAE when:
+
+- You’re targeting pre-C++17 code and can’t use `if constexpr`
+- You need to **remove an overload entirely** from consideration
+- You’re building low-level utilities (traits, detection idioms) that other templates depend on
+
+Prefer `if constexpr` / concepts when:
+
+- You’re in C++17+ and can keep logic inside the function body
+- You care more about readability than tiny compile-time edge cases
 
 ```cpp
 // Example: count elements for random-access vs non-random-access containers
@@ -52,6 +101,16 @@ distance(Iter first, Iter last) {
 > [!info] enable_if
 > `std::enable_if<Condition, T>::type` is `T` if Condition is true. If Condition is false, substitution fails — the overload is removed by SFINAE. This lets you enable/disable function templates based on compile-time conditions.
 
+### Where to apply enable_if
+
+You can use `enable_if` in three main places:
+
+1. Return type (C++11): `enable_if_t<Cond, Return>`
+2. Extra template parameter with default: `typename = enable_if_t<Cond>`
+3. Extra function parameter with default value
+
+Pattern 2 is usually the most readable and keeps signatures cleaner, especially with multiple constraints.
+
 ```cpp
 // Enable only for integral types
 template<typename T>
@@ -79,6 +138,18 @@ void process_integral(T value) {
 
 > [!info] Type traits
 > Type traits provide compile-time introspection about types. They answer questions like "is this an integer?", "is this a pointer?", "can you copy this type?" They're implemented using template specialization and are the building blocks of generic code.
+
+### How to think about traits
+
+At a high level, traits answer **yes/no** questions or perform **type transformations** at compile time:
+
+- `std::is_integral_v<T>` → should we treat this like an integer?
+- `std::remove_reference_t<T>` → what is the underlying value type?
+
+Most of the time you won’t write your own traits; you’ll:
+
+1. Combine existing standard traits with `if constexpr`
+2. Wrap them into higher-level concepts (see [[C++/03_Advanced/02_Concepts_and_Requirements]]).
 
 ### Primary type categories
 
@@ -141,6 +212,16 @@ std::is_integral_v<int>  // true
 > [!info] constexpr if
 > `if constexpr (condition)` evaluates the condition at compile time. The unused branch is **discarded** — it's not instantiated. This replaces many SFINAE use cases with simpler, readable code. The discarded branch can contain invalid code for the type being tested — it doesn't cause a compile error.
 
+### When to prefer constexpr-if over SFINAE
+
+Use `if constexpr` instead of SFINAE when:
+
+- You are branching on a simple trait (`is_integral_v`, `is_pointer_v`, etc.)
+- You don’t need to remove the overload itself, only change its implementation
+- Readability matters more than extremely fine-grained overload control
+
+Keep SFINAE/traits when implementing low-level utilities that other templates depend on.
+
 ```cpp
 template<typename T>
 auto process(T value) {
@@ -172,8 +253,6 @@ void serialize(const T& value, std::ostream& os) {
     }
 }
 ```
-
----
 
 ---
 
